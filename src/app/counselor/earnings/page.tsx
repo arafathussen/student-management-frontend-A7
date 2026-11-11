@@ -38,9 +38,25 @@ export default function CounselorEarningsPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  const totalEarned = (commissions as any[]).reduce(
-    (sum, c) =>
-      sum + Number(c.counselorPayoutAmount || c.netCommission || c.commissionAmount || 0),
+  const safeCommissions = Array.isArray(commissions)
+    ? commissions
+    : Array.isArray((commissions as any)?.commissions)
+    ? (commissions as any).commissions
+    : [];
+  const safeApplications = Array.isArray(applications) ? applications : [];
+  const safeUniversities = Array.isArray(universities) ? universities : [];
+
+  const totalEarned = safeCommissions.reduce(
+    (sum: number, c: any) =>
+      sum +
+      Number(
+        c.counselorShareBDT ||
+          c.netPayableAmount ||
+          c.counselorPayoutAmount ||
+          c.netCommission ||
+          c.commissionAmount ||
+          0
+      ),
     0
   );
 
@@ -85,7 +101,7 @@ export default function CounselorEarningsPage() {
             <div>
               <p className="text-xs text-slate-400">Assigned Applications</p>
               <p className="text-2xl font-extrabold text-white font-mono mt-1">
-                {applications.length}
+                {safeApplications.length}
               </p>
             </div>
             <CheckCircle2 className="w-8 h-8 text-blue-400/70" />
@@ -96,7 +112,7 @@ export default function CounselorEarningsPage() {
             <div>
               <p className="text-xs text-slate-400">Verified Commission Deals</p>
               <p className="text-2xl font-extrabold text-amber-400 font-mono mt-1">
-                {commissions.length}
+                {safeCommissions.length}
               </p>
             </div>
             <TrendingUp className="w-8 h-8 text-amber-400/70" />
@@ -117,16 +133,16 @@ export default function CounselorEarningsPage() {
 
       {/* Analytics Charts */}
       <AdminAnalyticsCharts
-        applications={applications as any[]}
-        commissions={commissions as any[]}
-        universities={universities as any[]}
+        applications={safeApplications}
+        commissions={safeCommissions}
+        universities={safeUniversities}
       />
 
       {/* Commission Table */}
       <Card className="border-slate-800 bg-slate-900/70 overflow-hidden">
         <CardHeader className="border-b border-slate-800/80 pb-3">
           <CardTitle className="text-sm font-bold text-white">
-            Counselor Commission Ledger ({commissions.length})
+            Counselor Commission Ledger ({safeCommissions.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
@@ -136,7 +152,7 @@ export default function CounselorEarningsPage() {
                 <div key={i} className="h-12 w-full rounded-xl bg-slate-800/70" />
               ))}
             </div>
-          ) : (commissions as any[]).length === 0 ? (
+          ) : safeCommissions.length === 0 ? (
             <div className="p-10 text-center text-xs text-slate-400">
               No commission payouts recorded yet. Completed student enrollments will appear here.
             </div>
@@ -151,20 +167,29 @@ export default function CounselorEarningsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {(commissions as any[]).map((c) => (
+                {safeCommissions.map((c: any) => (
                   <tr key={c.id} className="hover:bg-slate-800/30">
                     <td className="py-3 px-4 font-semibold text-white">
-                      {c.studentName || `Application #${c.id?.slice(0, 8)}`}
+                      {c.student?.user?.name ||
+                        c.student?.name ||
+                        c.studentName ||
+                        `Application #${c.id?.slice(0, 8)}`}
                     </td>
                     <td className="py-3 px-4 text-slate-300">
                       {c.universityName || "Partner University"}
                     </td>
                     <td className="py-3 px-4 font-mono text-emerald-400 font-bold">
-                      ${Number(c.counselorPayoutAmount || c.netCommission || 0).toLocaleString()}
+                      ${Number(
+                        c.counselorShareBDT ||
+                          c.netPayableAmount ||
+                          c.counselorPayoutAmount ||
+                          c.netCommission ||
+                          0
+                      ).toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant="success" className="text-[10px]">
-                        {c.status || "APPROVED"}
+                        {c.status || c.withdrawalStatus || "APPROVED"}
                       </Badge>
                     </td>
                   </tr>
@@ -177,4 +202,3 @@ export default function CounselorEarningsPage() {
     </div>
   );
 }
-

@@ -6,12 +6,22 @@ import { paymentService } from "@/services/paymentService";
 import { commissionService } from "@/services/commissionService";
 import { userService } from "@/services/userService";
 
+function extractArray(res: any, key?: string): any[] {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (key && Array.isArray(res?.[key])) return res[key];
+  if (key && Array.isArray(res?.data?.[key])) return res.data[key];
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data)) return res.data;
+  return [];
+}
+
 export function useUniversitiesQuery() {
   return useQuery({
     queryKey: ["universities"],
     queryFn: async () => {
-      const res = await higherStudyService.getUniversities();
-      return res.data || [];
+      const res = await higherStudyService.getUniversities({ limit: 100 });
+      return extractArray(res, "universities");
     },
   });
 }
@@ -21,7 +31,7 @@ export function useCountriesQuery() {
     queryKey: ["countries"],
     queryFn: async () => {
       const res = await higherStudyService.getCountries();
-      return res.data || [];
+      return extractArray(res, "countries");
     },
   });
 }
@@ -31,7 +41,7 @@ export function useMyApplicationsQuery(enabled = true) {
     queryKey: ["my-applications"],
     queryFn: async () => {
       const res = await higherStudyService.getMyApplications();
-      return res.data || [];
+      return extractArray(res, "applications");
     },
     enabled,
   });
@@ -41,8 +51,8 @@ export function useAllApplicationsQuery(enabled = true) {
   return useQuery({
     queryKey: ["all-applications"],
     queryFn: async () => {
-      const res = await higherStudyService.getAllApplications();
-      return res.data || [];
+      const res = await higherStudyService.getAllApplications({ limit: 100 });
+      return extractArray(res, "applications");
     },
     enabled,
   });
@@ -53,7 +63,7 @@ export function useMyPaymentsQuery(enabled = true) {
     queryKey: ["my-payments"],
     queryFn: async () => {
       const res = await paymentService.getMyPayments();
-      return res.data || [];
+      return extractArray(res, "payments");
     },
     enabled,
   });
@@ -64,7 +74,7 @@ export function useMyCommissionsQuery(enabled = true) {
     queryKey: ["my-commissions"],
     queryFn: async () => {
       const res = await commissionService.getMyCommissions();
-      return res.data || [];
+      return extractArray(res, "commissions");
     },
     enabled,
   });
@@ -75,7 +85,7 @@ export function useAllCommissionsQuery(enabled = true) {
     queryKey: ["all-commissions"],
     queryFn: async () => {
       const res = await commissionService.getAllCommissions();
-      return res.data || [];
+      return extractArray(res, "commissions");
     },
     enabled,
   });
@@ -85,8 +95,8 @@ export function useAllUsersQuery(enabled = true) {
   return useQuery({
     queryKey: ["all-users"],
     queryFn: async () => {
-      const res = await userService.getAllUsers();
-      return res.data || [];
+      const res = await userService.getAllUsers({ limit: 100 });
+      return extractArray(res, "users");
     },
     enabled,
   });

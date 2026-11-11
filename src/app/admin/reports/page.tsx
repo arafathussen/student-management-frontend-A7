@@ -39,12 +39,29 @@ export default function AdminReportsPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  const totalGrossTuition = (commissions as any[]).reduce(
-    (sum, item) => sum + Number(item.grossTuitionFee || 0),
+  const safeApplications = Array.isArray(applications) ? applications : [];
+  const safeCommissions = Array.isArray(commissions)
+    ? commissions
+    : Array.isArray((commissions as any)?.commissions)
+    ? (commissions as any).commissions
+    : [];
+  const safeUniversities = Array.isArray(universities) ? universities : [];
+
+  const totalGrossTuition = safeCommissions.reduce(
+    (sum: number, item: any) =>
+      sum + Number(item.grossAmountUSD || item.grossCommissionAmount || item.grossTuitionFee || 0),
     0
   );
-  const totalNetCommission = (commissions as any[]).reduce(
-    (sum, item) => sum + Number(item.netCommission || item.commissionAmount || 0),
+  const totalNetCommission = safeCommissions.reduce(
+    (sum: number, item: any) =>
+      sum +
+      Number(
+        item.netPayableAmount ||
+          item.companyShareAmount ||
+          item.netCommission ||
+          item.commissionAmount ||
+          0
+      ),
     0
   );
 
@@ -67,12 +84,12 @@ export default function AdminReportsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Link href="/admin/manage">
+          <Link href="/dashboard?tab=USERS">
             <Button variant="outline" size="sm" className="cursor-pointer">
-              <span>Manage Users &amp; Resources</span>
+              <span>Manage Users</span>
             </Button>
           </Link>
-          <Link href="/admin">
+          <Link href="/dashboard">
             <Button variant="primary" size="sm" className="cursor-pointer">
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               <span>Admin Command Center</span>
@@ -88,7 +105,7 @@ export default function AdminReportsPage() {
             <div>
               <p className="text-xs text-slate-400">Total Applications Tracked</p>
               <p className="text-2xl font-extrabold text-white font-mono mt-1">
-                {applications.length}
+                {safeApplications.length}
               </p>
             </div>
             <FileText className="w-8 h-8 text-blue-400/70" />
@@ -122,9 +139,9 @@ export default function AdminReportsPage() {
 
       {/* Recharts Visualizations */}
       <AdminAnalyticsCharts
-        applications={applications as any[]}
-        commissions={commissions as any[]}
-        universities={universities as any[]}
+        applications={safeApplications}
+        commissions={safeCommissions}
+        universities={safeUniversities}
       />
 
       {/* Commission Audit Table */}
@@ -142,7 +159,7 @@ export default function AdminReportsPage() {
                 <div key={i} className="h-12 w-full rounded-xl bg-slate-800/70" />
               ))}
             </div>
-          ) : (commissions as any[]).length === 0 ? (
+          ) : safeCommissions.length === 0 ? (
             <div className="p-10 text-center text-xs text-slate-400">
               No commission records logged yet. Settlements appear here automatically as student enrollments are finalized.
             </div>
@@ -157,20 +174,29 @@ export default function AdminReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {(commissions as any[]).slice(0, 10).map((item) => (
+                {safeCommissions.slice(0, 10).map((item: any) => (
                   <tr key={item.id} className="hover:bg-slate-800/30">
                     <td className="py-3 px-4 font-medium text-white">
-                      {item.studentName || `Record #${item.id?.slice(0, 8)}`}
+                      {item.student?.user?.name ||
+                        item.student?.name ||
+                        item.studentName ||
+                        item.universityName ||
+                        `Record #${item.id?.slice(0, 8)}`}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-300">
-                      ${Number(item.grossTuitionFee || 0).toLocaleString()}
+                      ${Number(item.grossAmountUSD || item.grossCommissionAmount || 0).toLocaleString()}
                     </td>
                     <td className="py-3 px-4 font-mono text-emerald-400 font-bold">
-                      ${Number(item.netCommission || item.commissionAmount || 0).toLocaleString()}
+                      ${Number(
+                        item.netPayableAmount ||
+                          item.companyShareAmount ||
+                          item.counselorShareBDT ||
+                          0
+                      ).toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant="success" className="text-[10px]">
-                        {item.status || "VERIFIED"}
+                        {item.status || item.withdrawalStatus || "VERIFIED"}
                       </Badge>
                     </td>
                   </tr>
@@ -183,4 +209,3 @@ export default function AdminReportsPage() {
     </div>
   );
 }
-

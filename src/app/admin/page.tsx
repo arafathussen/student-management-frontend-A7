@@ -1097,10 +1097,28 @@ export default function AdminCommandCenterPage() {
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.pathname === "/admin") {
-      router.replace("/dashboard");
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as AdminTab | null;
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+      if (window.location.pathname === "/admin") {
+        router.replace(tabParam ? `/dashboard?tab=${tabParam}` : "/dashboard");
+      }
     }
   }, [router]);
+
+  useEffect(() => {
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent<AdminTab>;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener("admin:switch-tab", handleSwitchTab);
+    return () => window.removeEventListener("admin:switch-tab", handleSwitchTab);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { motion, HTMLMotionProps, Variants } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 
 interface ScrollRevealProps extends HTMLMotionProps<"div"> {
   children: ReactNode;
@@ -59,11 +59,11 @@ export function ScrollReveal({
     <motion.div
       initial={getInitialPosition()}
       whileInView={getTargetPosition()}
-      viewport={{ once, margin: "-40px" }}
+      viewport={{ once, margin: "-20px" }}
       transition={{
         duration,
         delay,
-        ease: [0.16, 1, 0.3, 1], // Apple / Linear style smooth ease-out
+        ease: [0.16, 1, 0.3, 1],
       }}
       className={className}
       {...rest}
@@ -73,12 +73,12 @@ export function ScrollReveal({
   );
 }
 
-// Container for automatically staggering lists of cards or items
+// Container for lists of cards or items (safe for async state updates)
 export function ScrollRevealGroup({
   children,
   className = "",
-  staggerDelay = 0.1,
-  once = true,
+  staggerDelay: _staggerDelay = 0.1,
+  once: _once = true,
   ...rest
 }: {
   children: ReactNode;
@@ -86,26 +86,8 @@ export function ScrollRevealGroup({
   staggerDelay?: number;
   once?: boolean;
 } & HTMLMotionProps<"div">) {
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: staggerDelay,
-        delayChildren: 0.05,
-      },
-    },
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once, margin: "-40px" }}
-      className={className}
-      {...rest}
-    >
+    <motion.div className={className} {...rest}>
       {children}
     </motion.div>
   );
@@ -114,8 +96,8 @@ export function ScrollRevealGroup({
 export function ScrollRevealItem({
   children,
   className = "",
-  yOffset = 28,
-  duration = 0.5,
+  yOffset = 20,
+  duration = 0.45,
   ...rest
 }: {
   children: ReactNode;
@@ -123,20 +105,17 @@ export function ScrollRevealItem({
   yOffset?: number;
   duration?: number;
 } & HTMLMotionProps<"div">) {
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: yOffset }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
         duration,
         ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
-  return (
-    <motion.div variants={itemVariants} className={className} {...rest}>
+      }}
+      className={className}
+      {...rest}
+    >
       {children}
     </motion.div>
   );

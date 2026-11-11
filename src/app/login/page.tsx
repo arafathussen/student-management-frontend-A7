@@ -204,7 +204,7 @@ export default function LoginPage() {
         <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-xl shadow-2xl">
           <CardHeader className="space-y-1 pb-4 text-center">
             <CardTitle className="text-xl font-bold tracking-tight text-white">
-              Welcome Back 👋
+              Welcome Back
             </CardTitle>
             <CardDescription className="text-xs text-slate-400">
               Sign in to access your admissions &amp; management portal

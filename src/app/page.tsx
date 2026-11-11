@@ -119,12 +119,20 @@ export default function HomePage() {
 					successStoryService.getSettings().catch(() => null),
 					successStoryService.getStories({ limit: 6 }).catch(() => null),
 				]);
-				if (countriesRes?.data) setCountries(countriesRes.data);
-				if (unisRes?.data) setUniversities(unisRes.data);
-				if (blogsRes?.data) setBlogs(blogsRes.data);
+				const rawCountries = countriesRes?.data?.data || countriesRes?.data || countriesRes;
+				if (Array.isArray(rawCountries)) setCountries(rawCountries);
+
+				const rawUnis = unisRes?.data?.data || unisRes?.data || unisRes;
+				if (Array.isArray(rawUnis)) setUniversities(rawUnis);
+
+				const rawBlogs = blogsRes?.data?.data || blogsRes?.data || blogsRes;
+				if (Array.isArray(rawBlogs)) setBlogs(rawBlogs);
+
 				if (sSettingsRes) setSuccessSettings(sSettingsRes);
-				if (sStoriesRes?.data && sStoriesRes.data.length > 0) {
-					setSuccessStories(sStoriesRes.data);
+
+				const rawStories = sStoriesRes?.data || (Array.isArray(sStoriesRes) ? sStoriesRes : null);
+				if (Array.isArray(rawStories) && rawStories.length > 0) {
+					setSuccessStories(rawStories);
 				}
 			} catch (err) {
 				console.error("Failed to load home page data", err);

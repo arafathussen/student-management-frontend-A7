@@ -208,7 +208,14 @@ export const Navbar: React.FC = () => {
 											<div className="space-y-1">
 												<Link
 													href="/dashboard"
-													onClick={() => setIsProfileOpen(false)}
+													onClick={() => {
+														setIsProfileOpen(false);
+														if (typeof window !== "undefined") {
+															window.dispatchEvent(
+																new CustomEvent("admin:switch-tab", { detail: "OVERVIEW" })
+															);
+														}
+													}}
 													className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-blue-600/15 hover:border-blue-500/20 border border-transparent transition-all group"
 												>
 													<LayoutDashboard className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
@@ -218,12 +225,19 @@ export const Navbar: React.FC = () => {
 												{(user.role === "SUPER_ADMIN" || user.role === "ADMIN") && (
 													<>
 														<Link
-															href="/admin/manage"
-															onClick={() => setIsProfileOpen(false)}
+															href="/dashboard?tab=USERS"
+															onClick={() => {
+																setIsProfileOpen(false);
+																if (typeof window !== "undefined") {
+																	window.dispatchEvent(
+																		new CustomEvent("admin:switch-tab", { detail: "USERS" })
+																	);
+																}
+															}}
 															className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-indigo-600/15 hover:border-indigo-500/20 border border-transparent transition-all group"
 														>
 															<Shield className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-															<span>Manage Users &amp; Resources</span>
+															<span>Manage Users</span>
 														</Link>
 														<Link
 															href="/admin/reports"
