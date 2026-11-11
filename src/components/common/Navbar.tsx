@@ -4,6 +4,7 @@ import { RoleBadge } from "@/components/common/RoleBadge";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import {
+	Bell,
 	ChevronDown,
 	GraduationCap,
 	LayoutDashboard,
@@ -207,47 +208,40 @@ export const Navbar: React.FC = () => {
 											{/* Role-Based Nav Items */}
 											<div className="space-y-1">
 												<Link
-													href="/dashboard"
+													href="/dashboard?tab=OVERVIEW"
 													onClick={() => {
 														setIsProfileOpen(false);
 														if (typeof window !== "undefined") {
 															window.dispatchEvent(
 																new CustomEvent("admin:switch-tab", { detail: "OVERVIEW" })
 															);
+															window.dispatchEvent(
+																new CustomEvent("dashboard:switch-tab", { detail: "OVERVIEW" })
+															);
 														}
 													}}
 													className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-blue-600/15 hover:border-blue-500/20 border border-transparent transition-all group"
 												>
 													<LayoutDashboard className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-													<span>Dashboard</span>
+													<span>Overview &amp; Analytics</span>
 												</Link>
 
 												{(user.role === "SUPER_ADMIN" || user.role === "ADMIN") && (
-													<>
-														<Link
-															href="/dashboard?tab=USERS"
-															onClick={() => {
-																setIsProfileOpen(false);
-																if (typeof window !== "undefined") {
-																	window.dispatchEvent(
-																		new CustomEvent("admin:switch-tab", { detail: "USERS" })
-																	);
-																}
-															}}
-															className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-indigo-600/15 hover:border-indigo-500/20 border border-transparent transition-all group"
-														>
-															<Shield className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-															<span>Manage Users</span>
-														</Link>
-														<Link
-															href="/admin/reports"
-															onClick={() => setIsProfileOpen(false)}
-															className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-purple-600/15 hover:border-purple-500/20 border border-transparent transition-all group"
-														>
-															<GraduationCap className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-															<span>Analytics &amp; Reports</span>
-														</Link>
-													</>
+													<Link
+														href="/dashboard?tab=USERS"
+														onClick={() => {
+															setIsProfileOpen(false);
+															if (typeof window !== "undefined") {
+																window.dispatchEvent(
+																	new CustomEvent("admin:switch-tab", { detail: "USERS" })
+																);
+															}
+														}}
+														className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-indigo-600/15 hover:border-indigo-500/20 border border-transparent transition-all group"
+													>
+														<Shield className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+														<span>Manage Users</span>
+													</Link>
 												)}
 
 												{user.role === "COUNSELOR" && (
@@ -283,8 +277,18 @@ export const Navbar: React.FC = () => {
 												)}
 
 												<Link
-													href="/dashboard/profile"
-													onClick={() => setIsProfileOpen(false)}
+													href="/dashboard?tab=SETTINGS"
+													onClick={() => {
+														setIsProfileOpen(false);
+														if (typeof window !== "undefined") {
+															window.dispatchEvent(
+																new CustomEvent("admin:switch-tab", { detail: "SETTINGS" })
+															);
+															window.dispatchEvent(
+																new CustomEvent("dashboard:switch-tab", { detail: "SETTINGS" })
+															);
+														}
+													}}
 													className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-emerald-600/15 hover:border-emerald-500/20 border border-transparent transition-all group"
 												>
 													<User className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
@@ -331,8 +335,33 @@ export const Navbar: React.FC = () => {
 						)}
 					</div>
 
-					{/* Mobile Hamburger Button */}
-					<div className="flex md:hidden items-center gap-2">
+					{/* Mobile Notification Bell + Hamburger Button */}
+					<div className="flex md:hidden items-center gap-1.5">
+						{isAuthenticated && user && (
+							<Link
+								href="/dashboard?tab=NOTIFICATIONS"
+								onClick={() => {
+									setIsMobileMenuOpen(false);
+									if (typeof window !== "undefined") {
+										window.dispatchEvent(
+											new CustomEvent("admin:switch-tab", { detail: "NOTIFICATIONS" })
+										);
+										window.dispatchEvent(
+											new CustomEvent("dashboard:switch-tab", { detail: "NOTIFICATIONS" })
+										);
+									}
+								}}
+								aria-label="Notifications"
+								className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/80 transition-colors"
+							>
+								<Bell className="w-5 h-5 text-blue-400" />
+								{unreadNotificationCount > 0 && (
+									<span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border border-[#0b1329] shadow-md">
+										{unreadNotificationCount}
+									</span>
+								)}
+							</Link>
+						)}
 						<button
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 							className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"

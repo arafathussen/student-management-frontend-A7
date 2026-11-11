@@ -46,7 +46,7 @@ const COUNTRY_CODES = [
   { code: "+1", short: "US", country: "United States", placeholder: "e.g. 2025550123", minLength: 10, maxLength: 10 },
 ];
 
-export default function AccountSettingsPage() {
+export function AccountSettingsModule({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading, updateUser, refreshUser } = useAuth();
 
@@ -401,30 +401,32 @@ export default function AccountSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8 page-transition">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className={embedded ? "text-slate-100 pb-6" : "min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8 page-transition"}>
+      <div className={embedded ? "max-w-4xl space-y-6" : "max-w-4xl mx-auto space-y-8"}>
         {/* Navigation & Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <Link 
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-2 group"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Dashboard</span>
-            </Link>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Account Settings
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Manage your personal credentials, contact info, security, and profile photo.
-            </p>
-          </div>
+        {!embedded && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <Link 
+                href="/dashboard"
+                className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-2 group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Back to Dashboard</span>
+              </Link>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Account Settings
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">
+                Manage your personal credentials, contact info, security, and profile photo.
+              </p>
+            </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <RoleBadge role={user.role} />
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <RoleBadge role={user.role} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* User Card Overview */}
         <div className="glass-panel bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
@@ -830,4 +832,8 @@ export default function AccountSettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function AccountSettingsPage() {
+  return <AccountSettingsModule embedded={false} />;
 }

@@ -98,6 +98,7 @@ import {
   Compass
 } from "lucide-react";
 import ContactCmsTab from "@/components/admin/ContactCmsTab";
+import { AccountSettingsModule } from "@/app/dashboard/profile/page";
 import { contactService, ContactInquiry } from "@/services/contactService";
 import { successStoryService, SuccessPageSettings, SuccessStoryItem } from "@/services/successStoryService";
 
@@ -106,6 +107,7 @@ export type AdminTab =
   | "NOTIFICATIONS"
   | "APPLICATIONS"
   | "USERS"
+  | "SETTINGS"
   | "INBOX"
   | "HOME_CMS"
   | "UNIVERSITIES"
@@ -1138,6 +1140,7 @@ export default function AdminCommandCenterPage() {
       NOTIFICATIONS: "Notifications - Dashboard",
       APPLICATIONS: "Applications - Dashboard",
       USERS: "Users - Dashboard",
+      SETTINGS: "Account Settings - Dashboard",
       INBOX: "Mails - Dashboard",
       HOME_CMS: "Home Page - Dashboard",
       UNIVERSITIES: "Universities - Dashboard",
@@ -2152,6 +2155,7 @@ export default function AdminCommandCenterPage() {
     },
     { id: "APPLICATIONS", label: "Applications", icon: FileText, badge: safeApplications.length || 8 },
     { id: "USERS", label: "Users", icon: Users, badge: safeUsers.length || 10 },
+    { id: "SETTINGS", label: "Account Settings", icon: Settings },
     { 
       id: "INBOX", 
       label: "Mails", 
@@ -2170,10 +2174,10 @@ export default function AdminCommandCenterPage() {
   return (
     <div className="dashboard-viewport h-[calc(100dvh-4rem-1px)] sm:h-[calc(100dvh-5rem-1px)] bg-slate-950 text-slate-100 flex overflow-hidden">
       {/* =========================================================================
-          LEFT COLLAPSIBLE SIDEBAR
+          LEFT COLLAPSIBLE SIDEBAR (Desktop Only)
       ========================================================================= */}
       <aside 
-        className={`bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out flex flex-col h-full z-20 ${
+        className={`bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out hidden md:flex flex-col h-full z-20 ${
           isSidebarCollapsed ? "w-20" : "w-52 lg:w-56"
         }`}
       >
@@ -2289,7 +2293,7 @@ export default function AdminCommandCenterPage() {
       {/* =========================================================================
           RIGHT MAIN WORKSPACE (DYNAMIC CONTENT MODULES)
       ========================================================================= */}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-8 space-y-5 custom-scrollbar flex flex-col">
+      <main className="flex-1 min-w-0 h-full overflow-y-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-20 md:pb-8 space-y-5 custom-scrollbar flex flex-col">
         <div className="max-w-7xl mx-auto w-full space-y-5">
         {/* Workspace Top Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800/80">
@@ -8639,6 +8643,10 @@ export default function AdminCommandCenterPage() {
             </Card>
           </div>
         )}
+
+        {activeTab === "SETTINGS" && (
+          <AccountSettingsModule embedded />
+        )}
           </>
         )}
 
@@ -9284,6 +9292,40 @@ export default function AdminCommandCenterPage() {
         )}
         </div>
       </main>
+
+      {/* =========================================================================
+          MOBILE STICKY BOTTOM ICON-ONLY BAR (Excludes Notifications which is in Top Navbar)
+      ========================================================================= */}
+      <nav
+        aria-label="Mobile Dashboard Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 z-40 flex items-center justify-around px-1.5 shadow-2xl"
+      >
+        {sidebarItems
+          .filter((item) => item.id !== "NOTIFICATIONS")
+          .map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                title={item.label}
+                aria-label={item.label}
+                className={`relative p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+                  isActive
+                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/40 shadow-md shadow-blue-950/50"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {item.id === "INBOX" && inquiriesUnreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-950" />
+                )}
+              </button>
+            );
+          })}
+      </nav>
     </div>
   );
 }

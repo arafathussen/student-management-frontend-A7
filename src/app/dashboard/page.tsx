@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import AdminCommandCenterPage from "@/app/admin/page";
 import CounselorPortalPage from "@/app/counselor/page";
+import { AccountSettingsModule } from "@/app/dashboard/profile/page";
 import { Footer } from "@/components/common/Footer";
 
 type StudentDashboardTab = 
@@ -59,7 +60,8 @@ type StudentDashboardTab =
   | "NOTIFICATIONS"
   | "APPLICATIONS" 
   | "OFFER_LETTERS" 
-  | "CHAT";
+  | "CHAT"
+  | "SETTINGS";
 
 interface StudentNotification {
   id: string;
@@ -196,7 +198,7 @@ function StudentDashboardView() {
       const tabParam = params.get("tab") as StudentDashboardTab | null;
       const subTabParam = params.get("subTab") as "CHECKLIST" | "TRACKING" | "PAYMENT" | null;
       const paidParam = params.get("paid");
-      if (tabParam && ["OVERVIEW", "NOTIFICATIONS", "APPLICATIONS", "OFFER_LETTERS", "CHAT"].includes(tabParam)) {
+      if (tabParam && ["OVERVIEW", "NOTIFICATIONS", "APPLICATIONS", "OFFER_LETTERS", "CHAT", "SETTINGS"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
       if (subTabParam && ["CHECKLIST", "TRACKING", "PAYMENT"].includes(subTabParam)) {
@@ -206,6 +208,17 @@ function StudentDashboardView() {
         fetchMyApplications();
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent<StudentDashboardTab>;
+      if (customEvent.detail && ["OVERVIEW", "NOTIFICATIONS", "APPLICATIONS", "OFFER_LETTERS", "CHAT", "SETTINGS"].includes(customEvent.detail)) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener("dashboard:switch-tab", handleSwitchTab);
+    return () => window.removeEventListener("dashboard:switch-tab", handleSwitchTab);
   }, []);
 
   const fetchMyApplications = async () => {
@@ -304,6 +317,7 @@ function StudentDashboardView() {
     { id: "APPLICATIONS" as const, label: "Applications", icon: Building2, badge: applications.length > 0 ? applications.length : undefined },
     { id: "CHAT" as const, label: "Live Chat", icon: MessageSquare },
     { id: "OFFER_LETTERS" as const, label: "Offer Letters", icon: Award, badge: offerLettersCount > 0 ? offerLettersCount : undefined },
+    { id: "SETTINGS" as const, label: "Account Settings", icon: Settings },
   ];
 
   const filteredNotifications = notifications.filter((n) => {
@@ -326,7 +340,7 @@ function StudentDashboardView() {
           LEFT COLLAPSIBLE SIDEBAR (Admin Panel Style Hierarchy)
       ========================================================================= */}
       <aside 
-        className={`bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out flex flex-col h-full z-20 ${
+        className={`hidden md:flex bg-slate-900/90 border-r border-slate-800/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out flex-col h-full z-20 ${
           isSidebarCollapsed ? "w-20" : "w-56 lg:w-64"
         }`}
       >
@@ -414,18 +428,12 @@ function StudentDashboardView() {
           })}
         </nav>
 
-        {/* Sidebar Footer: Direct Link to Account Settings */}
+        {/* Sidebar Footer: Portal Status */}
         <div className="p-2.5 border-t border-slate-800/80">
-          <Link
-            href="/dashboard/profile"
-            title={isSidebarCollapsed ? "Account Settings" : undefined}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 border border-slate-800/50 transition-all ${
-              isSidebarCollapsed ? "justify-center px-2" : ""
-            }`}
-          >
-            <Settings className="w-4 h-4 text-slate-400 group-hover:text-white shrink-0" />
-            {!isSidebarCollapsed && <span>Account Settings</span>}
-          </Link>
+          <div className={`flex items-center gap-2 text-[11px] text-slate-400 px-2 py-1 ${isSidebarCollapsed ? "justify-center" : ""}`}>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            {!isSidebarCollapsed && <span className="truncate">Portal Live • Synced</span>}
+          </div>
         </div>
       </aside>
 
@@ -435,8 +443,8 @@ function StudentDashboardView() {
       <main
         className={`flex-1 min-w-0 h-full ${
           activeTab === "CHAT"
-            ? "overflow-hidden p-2 sm:p-4 lg:p-5 flex flex-col"
-            : "overflow-y-auto p-4 sm:p-5 lg:p-6 space-y-6 custom-scrollbar flex flex-col justify-between"
+            ? "overflow-hidden p-2 sm:p-4 lg:p-5 pb-16 md:pb-5 flex flex-col"
+            : "overflow-y-auto p-4 sm:p-5 lg:p-6 pb-20 md:pb-6 space-y-6 custom-scrollbar flex flex-col justify-between"
         }`}
       >
         <div className={activeTab === "CHAT" ? "h-full flex-1 flex flex-col min-h-0" : undefined}>
@@ -1198,11 +1206,52 @@ function StudentDashboardView() {
                 />
               </div>
             )}
+
+            {/* ===================================================================
+                TAB 6: ACCOUNT SETTINGS (Embedded)
+            =================================================================== */}
+            {activeTab === "SETTINGS" && (
+              <AccountSettingsModule embedded />
+            )}
             {/* End of active tab content */}
           </>
         )}
         </div>
       </main>
+
+      {/* =========================================================================
+          MOBILE STICKY BOTTOM ICON-ONLY BAR (Excludes Notifications which is in Top Navbar)
+      ========================================================================= */}
+      <nav
+        aria-label="Mobile Student Dashboard Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 z-40 flex items-center justify-around px-2 shadow-2xl"
+      >
+        {sidebarItems
+          .filter((item) => item.id !== "NOTIFICATIONS")
+          .map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                title={item.label}
+                aria-label={item.label}
+                className={`relative p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+                  isActive
+                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/40 shadow-md shadow-blue-950/50"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {item.badge !== undefined && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-slate-950" />
+                )}
+              </button>
+            );
+          })}
+      </nav>
 
       {/* Offer Letter Popup Modal */}
       {modalApp && (
