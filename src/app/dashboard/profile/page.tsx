@@ -401,8 +401,8 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
   }
 
   return (
-    <div className={embedded ? "text-slate-100 pb-6" : "min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8 page-transition"}>
-      <div className={embedded ? "max-w-4xl space-y-6" : "max-w-4xl mx-auto space-y-8"}>
+    <div className={embedded ? "text-slate-100 pb-8 w-full" : "min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8 page-transition"}>
+      <div className={embedded ? "w-full max-w-5xl mx-auto space-y-6 pt-1" : "max-w-4xl mx-auto space-y-8"}>
         {/* Navigation & Header */}
         {!embedded && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -415,7 +415,7 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
                 <span>Back to Dashboard</span>
               </Link>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Account Settings
+                Settings
               </h1>
               <p className="text-sm text-slate-400 mt-1">
                 Manage your personal credentials, contact info, security, and profile photo.
@@ -429,13 +429,13 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
         )}
 
         {/* User Card Overview */}
-        <div className="glass-panel bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="glass-panel bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+          <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 relative z-10">
             {/* Avatar & Upload Trigger */}
             <div className="relative group">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 ring-4 ring-blue-500/30 flex items-center justify-center text-white font-extrabold text-3xl shadow-xl">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 ring-4 ring-blue-500/30 flex items-center justify-center text-white font-extrabold text-3xl sm:text-4xl shadow-xl">
                 {avatarPreview || user.imageUrl ? (
                   <img 
                     src={avatarPreview || user.imageUrl} 
@@ -476,24 +476,24 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
             </div>
 
             {/* Profile Info Summary */}
-            <div className="flex-1 text-center sm:text-left space-y-1.5">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <h2 className="text-xl font-bold text-white tracking-tight">{name || user.name}</h2>
-                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 self-center sm:self-auto">
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{name || user.name}</h2>
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 self-center sm:self-auto">
                   Active
                 </span>
               </div>
-              <p className="text-sm text-slate-400 flex items-center justify-center sm:justify-start gap-1.5">
-                <Mail className="w-4 h-4 text-slate-500" />
+              <p className="text-sm sm:text-base text-slate-300 flex items-center justify-center sm:justify-start gap-2">
+                <Mail className="w-4 h-4 text-blue-400" />
                 <span>{user.email}</span>
               </p>
-              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-400">
+              <div className="pt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs sm:text-sm text-slate-400">
                 <span className="flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-blue-400" />
+                  <Shield className="w-4 h-4 text-blue-400" />
                   Role: <strong className="text-slate-200">{user.role}</strong>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                  <Calendar className="w-4 h-4 text-indigo-400" />
                   ID: <span className="font-mono text-slate-300">{user.id?.slice(0, 10)}...</span>
                 </span>
               </div>
@@ -502,10 +502,10 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
             {/* Change photo button */}
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="gap-2 shrink-0 border-slate-700 hover:border-blue-500"
+              className="gap-2 shrink-0 border-slate-700 hover:border-blue-500 cursor-pointer"
             >
               <Camera className="w-4 h-4 text-blue-400" />
               <span>{uploadingAvatar ? "Uploading..." : "Upload Photo"}</span>
@@ -514,7 +514,7 @@ export function AccountSettingsModule({ embedded = false }: { embedded?: boolean
         </div>
 
         {/* Settings Navigation Tabs */}
-        <div className="flex border-b border-slate-800 gap-4">
+        <div className="flex items-center justify-center sm:justify-start border-b border-slate-800 gap-6">
           <button
             onClick={() => setActiveTab("PROFILE")}
             className={`pb-3 text-sm font-semibold transition-colors relative flex items-center gap-2 ${

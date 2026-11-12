@@ -4,13 +4,21 @@ import { RoleBadge } from "@/components/common/RoleBadge";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import {
+	Award,
 	Bell,
+	BookOpen,
+	Building2,
 	ChevronDown,
+	Compass,
 	GraduationCap,
+	Home,
+	Info,
 	LayoutDashboard,
+	LogIn,
 	LogOut,
 	Menu,
-	MessageSquare,
+	PhoneCall,
+	Settings,
 	Shield,
 	User,
 	X,
@@ -24,6 +32,7 @@ export const Navbar: React.FC = () => {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const mobileMenuRef = useRef<HTMLDivElement>(null);
 	const pathname = usePathname();
 
 	const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(2);
@@ -55,6 +64,9 @@ export const Navbar: React.FC = () => {
 			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
 				setIsProfileOpen(false);
 			}
+			if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+				setIsMobileMenuOpen(false);
+			}
 		};
 		document.addEventListener("mousedown", handleClickOutside);
 		return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -72,13 +84,13 @@ export const Navbar: React.FC = () => {
 	};
 
 	const navLinks = [
-		{ name: "Home", href: "/" },
-		{ name: "Universities", href: "/universities" },
-		{ name: "Services", href: "/services" },
-		{ name: "About", href: "/about" },
-		{ name: "Guides", href: "/blogs" },
-		{ name: "Success", href: "/success" },
-		{ name: "Contact", href: "/contact" },
+		{ name: "Home", href: "/", icon: Home, iconBg: "bg-blue-500/15 text-blue-400" },
+		{ name: "Universities", href: "/universities", icon: Building2, iconBg: "bg-indigo-500/15 text-indigo-400" },
+		{ name: "Services", href: "/services", icon: Compass, iconBg: "bg-cyan-500/15 text-cyan-400" },
+		{ name: "Guides", href: "/blogs", icon: BookOpen, iconBg: "bg-emerald-500/15 text-emerald-400" },
+		{ name: "Success", href: "/success", icon: Award, iconBg: "bg-amber-500/15 text-amber-400" },
+		{ name: "About", href: "/about", icon: Info, iconBg: "bg-purple-500/15 text-purple-400" },
+		{ name: "Contact", href: "/contact", icon: PhoneCall, iconBg: "bg-teal-500/15 text-teal-400" },
 	];
 
 	return (
@@ -291,8 +303,8 @@ export const Navbar: React.FC = () => {
 													}}
 													className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-emerald-600/15 hover:border-emerald-500/20 border border-transparent transition-all group"
 												>
-													<User className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-													<span>Account Settings</span>
+													<Settings className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+													<span>Settings</span>
 												</Link>
 											</div>
 
@@ -335,8 +347,8 @@ export const Navbar: React.FC = () => {
 						)}
 					</div>
 
-					{/* Mobile Notification Bell + Hamburger Button */}
-					<div className="flex md:hidden items-center gap-1.5">
+					{/* Mobile Notification Bell + Hamburger Button + Floating Compact Popover Menu */}
+					<div ref={mobileMenuRef} className="relative flex md:hidden items-center gap-2">
 						{isAuthenticated && user && (
 							<Link
 								href="/dashboard?tab=NOTIFICATIONS"
@@ -352,9 +364,9 @@ export const Navbar: React.FC = () => {
 									}
 								}}
 								aria-label="Notifications"
-								className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-800/80 transition-colors"
+								className="relative w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-200 hover:text-white transition-all shadow-sm"
 							>
-								<Bell className="w-5 h-5 text-blue-400" />
+								<Bell className="w-4 h-4 text-blue-400" />
 								{unreadNotificationCount > 0 && (
 									<span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border border-[#0b1329] shadow-md">
 										{unreadNotificationCount}
@@ -363,102 +375,130 @@ export const Navbar: React.FC = () => {
 							</Link>
 						)}
 						<button
+							type="button"
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-							className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+							aria-label="Toggle Mobile Menu"
+							className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-sm cursor-pointer ${
+								isMobileMenuOpen
+									? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+									: "bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-200 hover:text-white"
+							}`}
 						>
 							{isMobileMenuOpen ? (
-								<X className="w-6 h-6" />
+								<X className="w-4 h-4" />
 							) : (
-								<Menu className="w-6 h-6" />
+								<Menu className="w-4 h-4" />
 							)}
 						</button>
-					</div>
-				</div>
-			</div>
 
-			{/* Mobile Dropdown Menu */}
-			{isMobileMenuOpen && (
-				<div className="md:hidden border-t border-white/[0.08] bg-[#0b1329] px-4 pt-3 pb-6 space-y-3 shadow-2xl">
-					<nav className="space-y-1">
-						{navLinks.map((link) => {
-							const isActive = pathname === link.href;
-							return (
-								<Link
-									key={link.href}
-									href={link.href}
-									onClick={() => setIsMobileMenuOpen(false)}
-									className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 border outline-none focus:outline-none focus-visible:outline-none focus:ring-0 ${
-										isActive
-											? "bg-blue-600/15 text-blue-400 border-blue-500/30"
-											: "text-white hover:text-blue-400 hover:bg-slate-800 border-transparent"
-									}`}
-								>
-									{link.name}
-								</Link>
-							);
-						})}
-					</nav>
-
-					<div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
-						{isAuthenticated && user ? (
-							<>
-								<div className="flex items-center justify-between px-3 py-2 bg-slate-900/60 rounded-xl">
-									<div className="flex items-center gap-2">
-										<span className="text-xs text-slate-300 font-medium">
-											{user.name}
-										</span>
-										{unreadNotificationCount > 0 && (
-											<span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold">
-												{unreadNotificationCount}
-											</span>
-										)}
+						{/* Compact Floating Mobile Popover Card (Screenshot 1 Style) */}
+						{isMobileMenuOpen && (
+							<div className="absolute right-0 top-12 w-60 z-50 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/90 p-2 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
+								{isAuthenticated && user && (
+									<div className="flex items-center justify-between gap-2 px-2.5 py-2 mb-1.5 rounded-xl bg-slate-900/80 border border-slate-800/70">
+										<div className="min-w-0">
+											<p className="text-xs font-bold text-white truncate">{user.name}</p>
+											<p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+										</div>
+										<RoleBadge role={user.role} />
 									</div>
-									<RoleBadge role={user.role} />
-								</div>
-								<Link
-									href={getDashboardLink()}
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<Button variant="primary" className="w-full justify-center">
-										Go to Dashboard
-									</Button>
-								</Link>
-								<Button
-									variant="outline"
-									onClick={() => {
-										logout();
-										setIsMobileMenuOpen(false);
-									}}
-									className="w-full justify-center text-rose-400"
-								>
-									Log Out
-								</Button>
-							</>
-						) : authLoading ? (
-							<div className="h-9 w-full bg-slate-800/60 rounded-xl animate-pulse" />
-						) : (
-							<div className="grid grid-cols-2 gap-2">
-								<Link
-									href="/login"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<Button variant="outline" className="w-full justify-center">
-										Sign In
-									</Button>
-								</Link>
-								<Link
-									href="/login"
-									onClick={() => setIsMobileMenuOpen(false)}
-								>
-									<Button variant="primary" className="w-full justify-center">
-										Apply Now
-									</Button>
-								</Link>
+								)}
+
+								<nav className="space-y-0.5">
+									{navLinks.map((link) => {
+										const Icon = link.icon;
+										const isActive = pathname === link.href;
+										return (
+											<Link
+												key={link.href}
+												href={link.href}
+												onClick={() => setIsMobileMenuOpen(false)}
+												className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+													isActive
+														? "bg-blue-600/15 text-blue-400 border border-blue-500/30"
+														: "text-slate-200 hover:text-white hover:bg-slate-900/90 border border-transparent"
+												}`}
+											>
+												<span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${link.iconBg}`}>
+													<Icon className="w-3.5 h-3.5" />
+												</span>
+												<span>{link.name}</span>
+											</Link>
+										);
+									})}
+								</nav>
+
+								<div className="my-1.5 border-t border-slate-800/80" />
+
+								{isAuthenticated && user ? (
+									<div className="space-y-0.5">
+										<Link
+											href={getDashboardLink()}
+											onClick={() => setIsMobileMenuOpen(false)}
+											className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-900/90 transition-all"
+										>
+											<span className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
+												<LayoutDashboard className="w-3.5 h-3.5" />
+											</span>
+											<span>Dashboard</span>
+										</Link>
+
+										<Link
+											href="/dashboard?tab=SETTINGS"
+											onClick={() => {
+												setIsMobileMenuOpen(false);
+												if (typeof window !== "undefined") {
+													window.dispatchEvent(
+														new CustomEvent("admin:switch-tab", { detail: "SETTINGS" })
+													);
+													window.dispatchEvent(
+														new CustomEvent("dashboard:switch-tab", { detail: "SETTINGS" })
+													);
+												}
+											}}
+											className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-900/90 transition-all"
+										>
+											<span className="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center shrink-0">
+												<Settings className="w-3.5 h-3.5" />
+											</span>
+											<span>Settings</span>
+										</Link>
+
+										<button
+											type="button"
+											onClick={() => {
+												logout();
+												setIsMobileMenuOpen(false);
+											}}
+											className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all cursor-pointer"
+										>
+											<span className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+												<LogOut className="w-3.5 h-3.5" />
+											</span>
+											<span>Log Out</span>
+										</button>
+									</div>
+								) : authLoading ? (
+									<div className="h-9 w-full bg-slate-800/60 rounded-xl animate-pulse" />
+								) : (
+									<div className="space-y-1">
+										<Link
+											href="/login"
+											onClick={() => setIsMobileMenuOpen(false)}
+											className="flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-900/90 transition-all"
+										>
+											<span className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
+												<LogIn className="w-3.5 h-3.5" />
+											</span>
+											<span>Sign In / Apply</span>
+										</Link>
+									</div>
+								)}
 							</div>
 						)}
 					</div>
 				</div>
-			)}
+			</div>
 		</header>
 	);
 };

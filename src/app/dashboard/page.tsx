@@ -317,7 +317,7 @@ function StudentDashboardView() {
     { id: "APPLICATIONS" as const, label: "Applications", icon: Building2, badge: applications.length > 0 ? applications.length : undefined },
     { id: "CHAT" as const, label: "Live Chat", icon: MessageSquare },
     { id: "OFFER_LETTERS" as const, label: "Offer Letters", icon: Award, badge: offerLettersCount > 0 ? offerLettersCount : undefined },
-    { id: "SETTINGS" as const, label: "Account Settings", icon: Settings },
+    { id: "SETTINGS" as const, label: "Settings", icon: Settings },
   ];
 
   const filteredNotifications = notifications.filter((n) => {

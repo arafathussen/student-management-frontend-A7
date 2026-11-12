@@ -1140,7 +1140,7 @@ export default function AdminCommandCenterPage() {
       NOTIFICATIONS: "Notifications - Dashboard",
       APPLICATIONS: "Applications - Dashboard",
       USERS: "Users - Dashboard",
-      SETTINGS: "Account Settings - Dashboard",
+      SETTINGS: "Settings - Dashboard",
       INBOX: "Mails - Dashboard",
       HOME_CMS: "Home Page - Dashboard",
       UNIVERSITIES: "Universities - Dashboard",
@@ -2155,7 +2155,7 @@ export default function AdminCommandCenterPage() {
     },
     { id: "APPLICATIONS", label: "Applications", icon: FileText, badge: safeApplications.length || 8 },
     { id: "USERS", label: "Users", icon: Users, badge: safeUsers.length || 10 },
-    { id: "SETTINGS", label: "Account Settings", icon: Settings },
+    { id: "SETTINGS", label: "Settings", icon: Settings },
     { 
       id: "INBOX", 
       label: "Mails", 
