@@ -27,7 +27,6 @@ import {
   HardDriveDownload,
   RotateCcw,
   Lock,
-  Sparkles,
   ChevronDown,
   ChevronUp,
   Trash2,
@@ -1105,7 +1104,7 @@ export default function BackupDataCenterTab({
                       disabled={restoring}
                       className="gap-2 cursor-pointer"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <RotateCcw className="w-3.5 h-3.5" />
                       <span>{restoring ? "Restoring..." : "Restore Selected Modules"}</span>
                     </Button>
                   </div>
@@ -1200,3 +1199,4 @@ export default function BackupDataCenterTab({
     </div>
   );
 }
+

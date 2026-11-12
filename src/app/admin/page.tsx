@@ -1202,17 +1202,14 @@ export default function AdminCommandCenterPage() {
       } else {
         setLoading(true);
       }
-      const [commRes, appRes, usrRes, uniRes, cntRes, visRes, inqRes, contactSettingsRes, trashAppRes, presetRes] = await Promise.all([
+
+      // TIER 1: Critical Overview & Sidebar Core Data (Unlocks Overview immediately!)
+      const [commRes, appRes, usrRes, uniRes, cntRes] = await Promise.all([
         commissionService.getAllCommissions().catch(() => ({ data: [] })),
         higherStudyService.getAllApplications().catch(() => ({ data: [] })),
         userService.getUsers({ limit: 100 }).catch(() => ({ data: [] })),
         higherStudyService.getUniversities({ includeDeleted: "true", limit: 100 }).catch(() => ({ data: [] })),
         higherStudyService.getCountries().catch(() => ({ data: [] })),
-        userService.getVisitorStats().catch(() => ({ liveVisitors: 0, totalGuestVisits: 0, uniqueVisitors: 0 })),
-        contactService.getInquiries().catch(() => ({ inquiries: [], unreadCount: 0 })),
-        contactService.getSettings().catch(() => null),
-        higherStudyService.getTrashApplications().catch(() => ({ data: [] })),
-        higherStudyService.getChecklistPresets().catch(() => ({ data: [] })),
       ]);
 
       const rawCommissions = commRes.data?.commissions || commRes.data;
@@ -1235,6 +1232,40 @@ export default function AdminCommandCenterPage() {
       const safeCountries = Array.isArray(rawCountries) ? rawCountries : [];
       setCountries(safeCountries);
 
+      if (safeApps.length > 0 && !calcData.applicationId) {
+        setCalcData((prev) => ({
+          ...prev,
+          applicationId: safeApps[0].id,
+          counselorId: safeApps[0].counselorId || "",
+        }));
+      }
+
+      // Unlock Overview UI immediately before secondary CMS/Inbox fetches finish
+      setLoading(false);
+
+      // TIER 2: Secondary Modules (Loaded in parallel without blocking Overview)
+      const [
+        visRes,
+        inqRes,
+        contactSettingsRes,
+        trashAppRes,
+        presetRes,
+        notifList,
+        sSettings,
+        sCardsRes,
+        blogsRes,
+      ] = await Promise.all([
+        userService.getVisitorStats().catch(() => ({ liveVisitors: 0, totalGuestVisits: 0, uniqueVisitors: 0 })),
+        contactService.getInquiries().catch(() => ({ inquiries: [], unreadCount: 0 })),
+        contactService.getSettings().catch(() => null),
+        higherStudyService.getTrashApplications().catch(() => ({ data: [] })),
+        higherStudyService.getChecklistPresets().catch(() => ({ data: [] })),
+        notificationService.getMyNotifications().catch(() => []),
+        successStoryService.getSettings().catch(() => null),
+        successStoryService.getStories({ limit: 100 }).catch(() => []),
+        higherStudyService.getBlogs({ limit: 100 }).catch(() => ({ data: [] })),
+      ]);
+
       if (visRes) {
         setVisitorStats({
           liveVisitors: visRes.liveVisitors ?? 0,
@@ -1243,7 +1274,6 @@ export default function AdminCommandCenterPage() {
         });
       }
 
-      // Handle Live Inquiries
       const liveInquiriesList = Array.isArray(inqRes?.inquiries) ? inqRes.inquiries : [];
       setInquiries(liveInquiriesList);
       setInquiriesUnreadCount(inqRes?.unreadCount ?? liveInquiriesList.filter((i: any) => !i.isRead).length);
@@ -1257,7 +1287,6 @@ export default function AdminCommandCenterPage() {
         setSelectedInquiry(null);
       }
 
-      // Populate Auto-Responder & Email Template Settings if returned from DB
       if (contactSettingsRes) {
         setAutoResponderSettings({
           subject: contactSettingsRes.autoResponderSubject || "We Have Received Your Inquiry — Rise Abroad Education",
@@ -1286,42 +1315,28 @@ export default function AdminCommandCenterPage() {
         });
       }
 
-      if (safeApps.length > 0 && !calcData.applicationId) {
-        setCalcData((prev) => ({
-          ...prev,
-          applicationId: safeApps[0].id,
-          counselorId: safeApps[0].counselorId || "",
-        }));
-      }
-
-      // Fetch Real In-App Notifications from DB (Filtered by 3-Day TTL)
-      try {
-        const notifList = await notificationService.getMyNotifications();
-        if (Array.isArray(notifList)) {
-          const formattedNotifs = notifList.map((item: any) => {
-            let type: "REGISTRATION" | "SECURITY" | "APPLICATION" = "APPLICATION";
-            const titleLower = (item.title || "").toLowerCase();
-            if (titleLower.includes("registered") || titleLower.includes("signup") || titleLower.includes("otp") || titleLower.includes("welcome")) {
-              type = "REGISTRATION";
-            } else if (titleLower.includes("security") || titleLower.includes("login") || titleLower.includes("auth")) {
-              type = "SECURITY";
-            }
-            return {
-              id: item.id,
-              type,
-              title: item.title,
-              description: item.body,
-              time: formatLastActive(item.createdAt),
-              timestamp: item.createdAt,
-              unread: !item.isRead,
-              role: "STUDENT",
-              actionUrl: item.actionUrl,
-            };
-          });
-          setNotifications(formattedNotifs);
-        }
-      } catch (notifFetchErr) {
-        console.error("Failed to fetch admin notifications:", notifFetchErr);
+      if (Array.isArray(notifList)) {
+        const formattedNotifs = notifList.map((item: any) => {
+          let type: "REGISTRATION" | "SECURITY" | "APPLICATION" = "APPLICATION";
+          const titleLower = (item.title || "").toLowerCase();
+          if (titleLower.includes("registered") || titleLower.includes("signup") || titleLower.includes("otp") || titleLower.includes("welcome")) {
+            type = "REGISTRATION";
+          } else if (titleLower.includes("security") || titleLower.includes("login") || titleLower.includes("auth")) {
+            type = "SECURITY";
+          }
+          return {
+            id: item.id,
+            type,
+            title: item.title,
+            description: item.body,
+            time: formatLastActive(item.createdAt),
+            timestamp: item.createdAt,
+            unread: !item.isRead,
+            role: "STUDENT",
+            actionUrl: item.actionUrl,
+          };
+        });
+        setNotifications(formattedNotifs);
       }
 
       if (trashAppRes && trashAppRes.data) {
@@ -1330,33 +1345,12 @@ export default function AdminCommandCenterPage() {
       if (presetRes && presetRes.data) {
         setAvailablePresets(Array.isArray(presetRes.data) ? presetRes.data : []);
       }
-
-      // Fetch Success Stories Page Header & Stats settings
-      try {
-        const sSettings = await successStoryService.getSettings();
-        if (sSettings) {
-          setSuccessSettings(sSettings);
-        }
-      } catch (e) {
-        console.warn("Could not load success page settings in admin:", e);
+      if (sSettings) {
+        setSuccessSettings(sSettings);
       }
-
-      // Fetch Success Stories Cards
-      try {
-        const sCardsRes = await successStoryService.getStories({ limit: 100 });
-        const items = sCardsRes?.data || (Array.isArray(sCardsRes) ? sCardsRes : []);
-        setAdminStoryCards(items);
-      } catch (e) {
-        console.warn("Could not load success story cards in admin:", e);
-      }
-
-      // Fetch Study Guides & Blogs
-      try {
-        const blogsRes = await higherStudyService.getBlogs({ limit: 100 });
-        setAdminGuides(Array.isArray(blogsRes?.data) ? blogsRes.data : []);
-      } catch (e) {
-        console.warn("Could not load guides in admin:", e);
-      }
+      const items = sCardsRes?.data || (Array.isArray(sCardsRes) ? sCardsRes : []);
+      setAdminStoryCards(items);
+      setAdminGuides(Array.isArray(blogsRes?.data) ? blogsRes.data : []);
     } catch (err) {
       console.error("Failed to load admin data", err);
     } finally {
@@ -10307,7 +10301,7 @@ export default function AdminCommandCenterPage() {
       ========================================================================= */}
       <nav
         aria-label="Mobile Dashboard Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 z-40 flex items-center justify-around px-1.5 shadow-2xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 z-40 flex items-center justify-start sm:justify-around gap-1 overflow-x-auto no-scrollbar px-2 shadow-2xl"
       >
         {sidebarItems
           .filter((item) => item.id !== "NOTIFICATIONS")
@@ -10321,7 +10315,7 @@ export default function AdminCommandCenterPage() {
                 onClick={() => setActiveTab(item.id)}
                 title={item.label}
                 aria-label={item.label}
-                className={`relative p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+                className={`relative p-2.5 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                   isActive
                     ? "bg-blue-600/20 text-blue-400 border border-blue-500/40 shadow-md shadow-blue-950/50"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent"

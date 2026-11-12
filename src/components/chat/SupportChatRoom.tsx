@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   CreditCard,
-  Sparkles,
+  RefreshCw,
   DollarSign,
   ArrowRightLeft,
   Check,
@@ -552,7 +552,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                   onClick={fetchChat}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-white text-left transition-colors cursor-pointer border-t border-slate-800/80 mt-1 pt-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
                   <span>Refresh Message Feed</span>
                 </button>
               </div>
@@ -701,7 +701,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                   }
                   className="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs hover:border-blue-500/50 hover:text-white transition-all cursor-pointer"
                 >
-                  🎓 Scholarships Info
+                  Scholarships Info
                 </button>
                 <button
                   type="button"
@@ -710,14 +710,14 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                   }
                   className="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs hover:border-blue-500/50 hover:text-white transition-all cursor-pointer"
                 >
-                  📄 Document Review
+                  Document Review
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsCallModalOpen(true)}
                   className="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs hover:border-emerald-500/50 hover:text-white transition-all cursor-pointer"
                 >
-                  📞 Direct Hotline
+                  Direct Hotline
                 </button>
               </div>
             )}
@@ -780,7 +780,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                           ) : isAction ? (
                             <AlertCircle className="w-3.5 h-3.5" />
                           ) : (
-                            <Sparkles className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-3.5 h-3.5" />
                           )}
                         </div>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-white">

@@ -103,7 +103,8 @@ function UniversitiesCatalogContent() {
       const matchesCountry =
         selectedCountry === "ALL" ||
         uni.countryId === selectedCountry ||
-        uni.country?.name === selectedCountry;
+        uni.country?.code?.toUpperCase() === selectedCountry.toUpperCase() ||
+        uni.country?.name?.toLowerCase() === selectedCountry.toLowerCase();
 
       const matchesPayment =
         selectedPaymentType === "ALL" ||
@@ -179,7 +180,7 @@ function UniversitiesCatalogContent() {
                 }}
                 className="w-full px-3 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
               >
-                <option value="ALL">🌍 All Countries</option>
+                <option value="ALL">All Countries</option>
                 {(countries as Country[]).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.flagUrl ? `${c.flagUrl} ` : ""} {c.name}
@@ -199,9 +200,9 @@ function UniversitiesCatalogContent() {
               }}
               className="w-full px-3 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
             >
-              <option value="ALL">📄 All Offer Types</option>
-              <option value="FREE">🎉 100% Free Offer Download</option>
-              <option value="DEPOSIT_REQUIRED">🔒 Deposit / Tuition Required</option>
+              <option value="ALL">All Offer Types</option>
+              <option value="FREE">100% Free Offer Download</option>
+              <option value="DEPOSIT_REQUIRED">Deposit / Tuition Required</option>
             </select>
           </div>
 
@@ -217,8 +218,8 @@ function UniversitiesCatalogContent() {
                 aria-label="Sort universities"
                 className="w-full px-3 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
               >
-                <option value="ranking">🏆 Top Ranked</option>
-                <option value="name">🔤 Name (A–Z)</option>
+                <option value="ranking">Top Ranked</option>
+                <option value="name">Name (A–Z)</option>
               </select>
             </div>
           </div>

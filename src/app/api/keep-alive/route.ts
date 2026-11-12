@@ -98,3 +98,4 @@ export async function GET(req: NextRequest) {
 export async function POST() {
 	return runKeepAliveCheck("super-admin-manual-ping");
 }
+

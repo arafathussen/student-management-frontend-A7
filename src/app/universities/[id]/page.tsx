@@ -19,8 +19,7 @@ import {
   FileCheck, 
   CheckCircle2, 
   ArrowLeft, 
-  Sparkles, 
-  Clock, 
+  Clock,  
   Globe2, 
   Lock, 
   Download, 
@@ -521,7 +520,7 @@ export default function UniversityDetailsPage() {
           <Card className="border-primary-500/20 bg-gradient-to-b from-primary-950/20 to-slate-900">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary-400" />
+                <FileCheck className="w-4 h-4 text-primary-400" />
                 Offer Letter Policy
               </CardTitle>
             </CardHeader>

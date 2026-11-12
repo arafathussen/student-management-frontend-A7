@@ -10,9 +10,9 @@ import type { IGlobalUniversity } from "@/types";
 import {
 	ArrowRight,
 	Award,
+	CheckCircle2,
 	MapPin,
 	Tag,
-	Sparkles,
 } from "lucide-react";
 
 export const UniversityCard: React.FC<{
@@ -137,8 +137,8 @@ export const UniversityCard: React.FC<{
 			{/* Footer Action */}
 			<div className="p-4 sm:p-5 pt-0">
 				<div className="pt-3.5 border-t border-slate-800/80 flex items-center justify-between gap-3">
-					<div className="text-[11px] text-slate-400 flex items-center gap-1">
-						<Sparkles className="w-3.5 h-3.5 text-amber-400" />
+					<div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+						<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
 						<span>Direct Admission</span>
 					</div>
 

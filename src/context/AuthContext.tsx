@@ -54,8 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 					setUser(parsed);
 					setAccessToken(savedToken);
 					setAuthCookies(parsed, savedToken);
+					// Unblock UI immediately with verified cached session while refreshing profile in background
+					setIsLoading(false);
 
-					// Always sync live data from database immediately
+					// Always sync live data from database silently
 					try {
 						const res = await userService.getMe();
 						const dbUser = res.data || res;

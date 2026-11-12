@@ -3,7 +3,6 @@
 import { UniversityCard } from "@/components/higher-study/UniversityCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { higherStudyService } from "@/services/higherStudyService";
 import { 
   successStoryService, 
@@ -165,7 +164,7 @@ export default function HomePage() {
 	});
 
 	return (
-		<div className="space-y-24 pb-20">
+		<div className="space-y-16 sm:space-y-20 lg:space-y-24 pb-16 sm:pb-20">
 			{/* HERO SECTION */}
 			<section className="relative pt-12 sm:pt-20 pb-16 overflow-hidden">
 				{/* Background Glow Accents */}
@@ -210,7 +209,7 @@ export default function HomePage() {
 								onChange={(e) => setSelectedCountry(e.target.value)}
 								className="bg-slate-900/90 border border-slate-800 text-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
 							>
-								<option value="ALL">🌍 All Countries</option>
+								<option value="ALL">All Countries</option>
 								{countries.map((c) => (
 									<option key={c.id} value={c.code}>
 										{c.name} ({c.code})
@@ -218,8 +217,14 @@ export default function HomePage() {
 								))}
 							</select>
 
-							<Link href="/universities">
-								<Button variant="primary" className="w-full sm:w-auto gap-2">
+							<Link
+								href={
+									searchQuery.trim()
+										? `/universities?q=${encodeURIComponent(searchQuery.trim())}`
+										: "/universities"
+								}
+							>
+								<Button variant="primary" className="w-full sm:w-auto gap-2 cursor-pointer">
 									<span>Explore</span>
 									<ArrowRight className="w-4 h-4" />
 								</Button>
@@ -598,125 +603,6 @@ export default function HomePage() {
 					</div>
 				</section>
 			)}
-
-			{/* POPULAR STUDY DESTINATIONS */}
-			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<ScrollReveal direction="up" yOffset={24} duration={0.5} className="flex items-end justify-between mb-10">
-					<div>
-						<Badge variant="default" className="mb-2">
-							DESTINATIONS
-						</Badge>
-						<h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-							Explore Top Study Countries
-						</h2>
-						<p className="text-sm text-slate-400 mt-1">
-							High visa ratio, post-study work permits, and English medium
-							education.
-						</p>
-					</div>
-					<Link
-						href="/universities"
-						className="hidden sm:flex items-center gap-1 text-sm font-semibold text-blue-400 hover:text-blue-300"
-					>
-						<span>View All Countries</span>
-						<ArrowRight className="w-4 h-4" />
-					</Link>
-				</ScrollReveal>
-
-				<ScrollRevealGroup staggerDelay={0.09} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-					{/* Cyprus */}
-					<ScrollRevealItem yOffset={30}>
-						<Card className="glass-card-hover group border-slate-800/80 p-5 cursor-pointer h-full">
-							<div className="flex items-center justify-between mb-4">
-								<span className="text-3xl">🇨🇾</span>
-								<Badge variant="gold">Up to 50% Scholarship</Badge>
-							</div>
-							<h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-								Cyprus (Europe)
-							</h3>
-							<p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-								European quality degrees, low tuition fees, and IELTS relaxation
-								available with MOI letters.
-							</p>
-							<div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-								<span>Average: €3,500/yr</span>
-								<span className="text-blue-400 font-semibold group-hover:underline">
-									Explore →
-								</span>
-							</div>
-						</Card>
-					</ScrollRevealItem>
-
-					{/* United Kingdom */}
-					<ScrollRevealItem yOffset={30}>
-						<Card className="glass-card-hover group border-slate-800/80 p-5 cursor-pointer h-full">
-							<div className="flex items-center justify-between mb-4">
-								<span className="text-3xl">🇬🇧</span>
-								<Badge variant="default">2-Yr Post Study Visa</Badge>
-							</div>
-							<h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-								United Kingdom
-							</h3>
-							<p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-								Top-ranked Russell Group & modern universities with fast-track 1-year
-								Masters degrees.
-							</p>
-							<div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-								<span>Average: £12,000/yr</span>
-								<span className="text-blue-400 font-semibold group-hover:underline">
-									Explore →
-								</span>
-							</div>
-						</Card>
-					</ScrollRevealItem>
-
-					{/* Canada */}
-					<ScrollRevealItem yOffset={30}>
-						<Card className="glass-card-hover group border-slate-800/80 p-5 cursor-pointer h-full">
-							<div className="flex items-center justify-between mb-4">
-								<span className="text-3xl">🇨🇦</span>
-								<Badge variant="success">PGWP & PR Pathway</Badge>
-							</div>
-							<h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-								Canada
-							</h3>
-							<p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-								Public universities and designated learning institutions (DLI)
-								with post-grad work permits.
-							</p>
-							<div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-								<span>Average: $16,000 CAD</span>
-								<span className="text-blue-400 font-semibold group-hover:underline">
-									Explore →
-								</span>
-							</div>
-						</Card>
-					</ScrollRevealItem>
-
-					{/* Germany */}
-					<ScrollRevealItem yOffset={30}>
-						<Card className="glass-card-hover group border-slate-800/80 p-5 cursor-pointer h-full">
-							<div className="flex items-center justify-between mb-4">
-								<span className="text-3xl">🇩🇪</span>
-								<Badge variant="purple">Tuition-Free Options</Badge>
-							</div>
-							<h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-								Germany & Europe
-							</h3>
-							<p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-								High technology research institutes and international English
-								masters programs.
-							</p>
-							<div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-								<span>Schengen Zone</span>
-								<span className="text-blue-400 font-semibold group-hover:underline">
-									Explore →
-								</span>
-							</div>
-						</Card>
-					</ScrollRevealItem>
-				</ScrollRevealGroup>
-			</section>
 
 			{/* 4 REASONS WHY CHOOSE THIS PORTAL */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
