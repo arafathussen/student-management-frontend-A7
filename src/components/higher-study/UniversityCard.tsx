@@ -5,12 +5,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { formatCurrency, slugify } from "@/lib/utils";
+import { formatCurrency, getUniversityCoverImage, slugify } from "@/lib/utils";
 import type { IGlobalUniversity } from "@/types";
 import {
 	ArrowRight,
 	Award,
-	Building2,
 	MapPin,
 	Tag,
 	Sparkles,
@@ -42,7 +41,7 @@ export const UniversityCard: React.FC<{
 		}
 	};
 
-	const coverImg = university.coverImageUrl || university.bannerUrl || university.logoUrl;
+	const coverImg = getUniversityCoverImage(university);
 	const detailHref = `/universities/${slugify(university.name) || university.id}`;
 	const summaryText =
 		university.excerpt ||
@@ -54,18 +53,12 @@ export const UniversityCard: React.FC<{
 			<div>
 				{/* 16:9 Thumbnail Banner Container */}
 				<Link href={detailHref} className="block relative w-full aspect-[16/9] bg-slate-900 border-b border-slate-800/80 overflow-hidden">
-					{coverImg ? (
-						<img
-							src={coverImg}
-							alt={university.name}
-							className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-							loading="lazy"
-						/>
-					) : (
-						<div className="w-full h-full bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/70 flex items-center justify-center">
-							<Building2 className="w-12 h-12 text-blue-400/30" />
-						</div>
-					)}
+					<img
+						src={coverImg}
+						alt={university.name}
+						className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+						loading="lazy"
+					/>
 
 					<div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent pointer-events-none" />
 

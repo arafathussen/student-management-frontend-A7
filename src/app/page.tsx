@@ -20,11 +20,11 @@ import {
 	CheckCircle2,
 	Compass,
 	Globe,
+	Globe2,
 	GraduationCap,
 	MapPin,
 	Search,
 	ShieldCheck,
-	TrendingUp,
 	Users,
 	Trophy,
 	Calendar,
@@ -123,7 +123,11 @@ export default function HomePage() {
 				if (Array.isArray(rawCountries)) setCountries(rawCountries);
 
 				const rawUnis = unisRes?.data?.data || unisRes?.data || unisRes;
-				if (Array.isArray(rawUnis)) setUniversities(rawUnis);
+				if (Array.isArray(rawUnis)) {
+					setUniversities(
+						rawUnis.filter((u: any) => !u.isDeleted && u.status !== "DRAFT" && !u.isDraft)
+					);
+				}
 
 				const rawBlogs = Array.isArray(blogsRes?.data)
 					? blogsRes.data
@@ -415,7 +419,81 @@ export default function HomePage() {
 			</section>
 
 			{/* =====================================================================
-			    3. HIGHER STUDY GUIDES & VISA HANDBOOKS SHOWCASE (RIGHT AFTER SUCCESS)
+			    3. EXPLORE ACCREDITED UNIVERSITIES SHOWCASE (RIGHT AFTER SUCCESS)
+			===================================================================== */}
+			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<ScrollReveal direction="up" yOffset={24} duration={0.5}>
+					<div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+						<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold tracking-wide">
+							<Globe2 className="w-3.5 h-3.5" />
+							<span>Global Partner Directory</span>
+						</div>
+
+						<h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+							Explore{" "}
+							<span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
+								Accredited Universities
+							</span>
+						</h2>
+
+						<p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
+							Browse top institutions in the UK, USA, Canada, Germany, and Australia. Check admission criteria, tuition fees, and offer letter policies.
+						</p>
+					</div>
+				</ScrollReveal>
+
+				{isLoading ? (
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+						{[1, 2, 3].map((idx) => (
+							<div
+								key={idx}
+								className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden"
+							>
+								<div className="aspect-[16/9] w-full bg-slate-800" />
+								<div className="p-5 space-y-3">
+									<div className="h-5 w-3/4 rounded bg-slate-800" />
+									<div className="h-12 w-full rounded bg-slate-800/60" />
+								</div>
+							</div>
+						))}
+					</div>
+				) : filteredUniversities.length === 0 ? (
+					<div className="text-center py-14 bg-slate-900/40 rounded-2xl border border-slate-800">
+						<Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+						<h3 className="text-base font-semibold text-slate-200">
+							No universities found
+						</h3>
+						<p className="text-xs text-slate-500 mt-1">
+							Try changing your search query or country filter.
+						</p>
+					</div>
+				) : (
+					<ScrollRevealGroup staggerDelay={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{filteredUniversities.slice(0, 3).map((uni) => (
+							<ScrollRevealItem key={uni.id} yOffset={30}>
+								<UniversityCard university={uni} />
+							</ScrollRevealItem>
+						))}
+					</ScrollRevealGroup>
+				)}
+
+				{/* Explore All Universities CTA */}
+				<div className="text-center pt-10">
+					<Link href="/universities">
+						<Button
+							variant="secondary"
+							size="lg"
+							className="gap-2 bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 px-7 py-2.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer font-medium"
+						>
+							<span>Explore All Universities</span>
+							<ArrowRight className="w-4 h-4" />
+						</Button>
+					</Link>
+				</div>
+			</section>
+
+			{/* =====================================================================
+			    4. HIGHER STUDY GUIDES & VISA HANDBOOKS SHOWCASE
 			===================================================================== */}
 			{blogs.length > 0 && (
 				<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -638,50 +716,6 @@ export default function HomePage() {
 						</Card>
 					</ScrollRevealItem>
 				</ScrollRevealGroup>
-			</section>
-
-			{/* FEATURED UNIVERSITIES */}
-			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<ScrollReveal direction="up" yOffset={24} duration={0.5} className="flex items-end justify-between mb-10">
-					<div>
-						<Badge variant="gold" className="mb-2">
-							PARTNER INSTITUTIONS
-						</Badge>
-						<h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-							Featured Universities & Colleges
-						</h2>
-						<p className="text-sm text-slate-400 mt-1">
-							Direct admissions with official offer letter processing.
-						</p>
-					</div>
-					<Link
-						href="/universities"
-						className="flex items-center gap-1 text-sm font-semibold text-blue-400 hover:text-blue-300"
-					>
-						<span>View Full Catalog</span>
-						<ArrowRight className="w-4 h-4" />
-					</Link>
-				</ScrollReveal>
-
-				{filteredUniversities.length === 0 && !isLoading ? (
-					<div className="text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800">
-						<Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-						<h3 className="text-base font-semibold text-slate-200">
-							No universities found
-						</h3>
-						<p className="text-xs text-slate-500 mt-1">
-							Try changing your search query or country filter.
-						</p>
-					</div>
-				) : (
-					<ScrollRevealGroup staggerDelay={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-						{filteredUniversities.map((uni) => (
-							<ScrollRevealItem key={uni.id} yOffset={30}>
-								<UniversityCard university={uni} />
-							</ScrollRevealItem>
-						))}
-					</ScrollRevealGroup>
-				)}
 			</section>
 
 			{/* 4 REASONS WHY CHOOSE THIS PORTAL */}

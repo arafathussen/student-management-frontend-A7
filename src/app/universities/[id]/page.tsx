@@ -8,7 +8,7 @@ import { University, Program } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { slugify } from "@/lib/utils";
+import { getUniversityCoverImage, slugify } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { 
@@ -242,7 +242,7 @@ export default function UniversityDetailsPage() {
     );
   }
 
-  const coverImg = university.coverImageUrl || university.bannerUrl;
+  const coverImg = getUniversityCoverImage(university);
   const officialLink = university.programsCtaUrl || university.website || "";
   const officialLabel = university.programsCtaLabel || "View Official Programs";
 

@@ -8,11 +8,9 @@ import { University, Country } from "@/types";
 import { UniversityCard } from "@/components/higher-study/UniversityCard";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import {
   Search,
   Filter,
-  Globe2,
   Building2,
   ArrowUpDown,
   ChevronLeft,
@@ -152,22 +150,7 @@ function UniversitiesCatalogContent() {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="text-center max-w-3xl mx-auto mb-10">
-        <Badge variant="primary" className="mb-3">
-          <Globe2 className="w-3.5 h-3.5 mr-1" />
-          Global Partner Directory
-        </Badge>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Explore Accredited Universities
-        </h1>
-        <p className="text-slate-400 mt-2 text-sm sm:text-base">
-          Browse top institutions in the UK, USA, Canada, Germany, and Australia.
-          Check admission criteria, tuition fees, and offer letter policies.
-        </p>
-      </div>
-
+    <div className="min-h-screen py-8 px-4 max-w-7xl mx-auto">
       {/* Search, Filter & Sort Bar (URL State Synchronized) */}
       <div className="bg-slate-900/80 border border-slate-800 backdrop-blur-xl p-4 sm:p-5 rounded-2xl mb-8 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">

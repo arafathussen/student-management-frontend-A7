@@ -15,9 +15,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { slugify } from "@/lib/utils";
+import { slugify, getUniversityCoverImage } from "@/lib/utils";
 import { ApplicationChecklistPresetTab } from "@/components/admin/ApplicationChecklistPresetTab";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
+import BackupDataCenterTab from "@/components/admin/BackupDataCenterTab";
 import { 
   LayoutDashboard,
   Bell,
@@ -95,7 +96,8 @@ import {
   FileDown,
   Folder,
   Info,
-  Compass
+  Compass,
+  Database
 } from "lucide-react";
 import ContactCmsTab from "@/components/admin/ContactCmsTab";
 import { AccountSettingsModule } from "@/app/dashboard/profile/page";
@@ -114,7 +116,8 @@ export type AdminTab =
   | "GUIDES_CMS"
   | "SUCCESS_CMS"
   | "CONTACT_CMS"
-  | "FINANCIALS";
+  | "FINANCIALS"
+  | "BACKUP_CENTER";
 
 export default function AdminCommandCenterPage() {
   const router = useRouter();
@@ -1178,6 +1181,7 @@ export default function AdminCommandCenterPage() {
       SUCCESS_CMS: "Success Stories - Dashboard",
       CONTACT_CMS: "Contact Page - Dashboard",
       FINANCIALS: "Commissions - Dashboard",
+      BACKUP_CENTER: "Data & Backup - Dashboard",
     };
     const pageName = tabMap[activeTab] || "Dashboard";
     document.title = `${pageName} | Rise Abroad Education`;
@@ -2343,6 +2347,9 @@ export default function AdminCommandCenterPage() {
     { id: "SUCCESS_CMS", label: "Success Stories", icon: Award },
     { id: "CONTACT_CMS", label: "Contact Page", icon: PhoneCall },
     { id: "FINANCIALS", label: "Commissions", icon: DollarSign, badge: safeCommissions.length || 2 },
+    ...(user?.role === "SUPER_ADMIN"
+      ? [{ id: "BACKUP_CENTER" as AdminTab, label: "Data & Backup", icon: Database }]
+      : []),
   ];
 
 
@@ -7437,7 +7444,7 @@ export default function AdminCommandCenterPage() {
                   /* Universities Grid */
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {displayedUniversities.map((uni) => {
-                      const coverImg = uni.coverImageUrl || uni.bannerUrl;
+                      const coverImg = getUniversityCoverImage(uni);
                       const isDraft = !uni.isDeleted && (uni.status === "DRAFT" || uni.isDraft);
                       const isDeleted = uni.isDeleted;
 
@@ -7446,18 +7453,12 @@ export default function AdminCommandCenterPage() {
                           <div>
                             {/* 16:9 Thumbnail Cover */}
                             <div className="relative w-full aspect-[16/9] bg-slate-950 border-b border-slate-800 overflow-hidden">
-                              {coverImg ? (
-                                <img
-                                  src={coverImg}
-                                  alt={uni.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/70 flex items-center justify-center">
-                                  <Building2 className="w-10 h-10 text-blue-400/30" />
-                                </div>
-                              )}
+                              <img
+                                src={coverImg}
+                                alt={uni.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
 
                               {/* Status Badge overlay */}
@@ -10033,6 +10034,24 @@ export default function AdminCommandCenterPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {activeTab === "BACKUP_CENTER" && user?.role === "SUPER_ADMIN" && (
+          <BackupDataCenterTab
+            userRole={user?.role}
+            userEmail={user?.email}
+            userName={user?.name}
+            counts={{
+              countries: safeCountries.length,
+              universities: safeUniversities.length,
+              guides: adminGuides.length,
+              applications: safeApplications.length,
+              users: safeUsers.length,
+              commissions: safeCommissions.length,
+              inquiries: inquiries.length,
+            }}
+            onRestoreComplete={() => fetchAdminData(true)}
+          />
         )}
 
         {activeTab === "SETTINGS" && (
