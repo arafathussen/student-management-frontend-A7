@@ -125,8 +125,16 @@ export default function HomePage() {
 				const rawUnis = unisRes?.data?.data || unisRes?.data || unisRes;
 				if (Array.isArray(rawUnis)) setUniversities(rawUnis);
 
-				const rawBlogs = blogsRes?.data?.data || blogsRes?.data || blogsRes;
-				if (Array.isArray(rawBlogs)) setBlogs(rawBlogs);
+				const rawBlogs = Array.isArray(blogsRes?.data)
+					? blogsRes.data
+					: Array.isArray(blogsRes)
+					? blogsRes
+					: [];
+				setBlogs(
+					rawBlogs
+						.filter((b: any) => b.status !== "DRAFT" && b.status !== "TRASH")
+						.slice(0, 3)
+				);
 
 				if (sSettingsRes) setSuccessSettings(sSettingsRes);
 

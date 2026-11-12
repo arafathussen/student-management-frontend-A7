@@ -247,6 +247,29 @@ export default function AdminCommandCenterPage() {
   const [storyCardSearch, setStoryCardSearch] = useState("");
   const [storyCardCountryFilter, setStoryCardCountryFilter] = useState("ALL");
 
+  // Guides & Blogs CMS State
+  const [adminGuides, setAdminGuides] = useState<any[]>([]);
+  const [guideStatusFilter, setGuideStatusFilter] = useState<"ALL" | "DRAFT" | "TRASH">("ALL");
+  const [guideViewMode, setGuideViewMode] = useState<"LIST" | "EDITOR">("LIST");
+  const [guideSearch, setGuideSearch] = useState("");
+  const [guideCategoryFilter, setGuideCategoryFilter] = useState("ALL");
+  const [guidePage, setGuidePage] = useState(1);
+  const [savingGuide, setSavingGuide] = useState(false);
+  const [guideBannerUploading, setGuideBannerUploading] = useState(false);
+  const guideBannerInputRef = useRef<HTMLInputElement>(null);
+  const [editingGuideId, setEditingGuideId] = useState<string | null>(null);
+  const [guideDeleteTarget, setGuideDeleteTarget] = useState<{ guide: any; hard: boolean } | null>(null);
+  const [isDeletingGuide, setIsDeletingGuide] = useState(false);
+  const [guideForm, setGuideForm] = useState({
+    title: "",
+    category: "United Kingdom",
+    readTime: "5 min read",
+    excerpt: "",
+    bannerUrl: "",
+    tags: "UK Visa, CAS, Financial Proof",
+    content: "",
+  });
+
   const toUrlSlug = (text: string) => {
     return text
       .toLowerCase()
@@ -1315,6 +1338,14 @@ export default function AdminCommandCenterPage() {
       } catch (e) {
         console.warn("Could not load success story cards in admin:", e);
       }
+
+      // Fetch Study Guides & Blogs
+      try {
+        const blogsRes = await higherStudyService.getBlogs({ limit: 100 });
+        setAdminGuides(Array.isArray(blogsRes?.data) ? blogsRes.data : []);
+      } catch (e) {
+        console.warn("Could not load guides in admin:", e);
+      }
     } catch (err) {
       console.error("Failed to load admin data", err);
     } finally {
@@ -2037,6 +2068,150 @@ export default function AdminCommandCenterPage() {
     }
   };
 
+  // =========================================================================
+  // GUIDES & BLOGS CMS HANDLERS
+  // =========================================================================
+  const refreshAdminGuides = async () => {
+    try {
+      const blogsRes = await higherStudyService.getBlogs({ limit: 100 });
+      setAdminGuides(Array.isArray(blogsRes?.data) ? blogsRes.data : []);
+    } catch (err) {
+      console.warn("Could not refresh guides:", err);
+    }
+  };
+
+  const handleOpenCreateGuide = () => {
+    setEditingGuideId(null);
+    setGuideForm({
+      title: "",
+      category: "United Kingdom",
+      readTime: "5 min read",
+      excerpt: "",
+      bannerUrl: "",
+      tags: "UK Visa, CAS, Financial Proof",
+      content: "",
+    });
+    setGuideViewMode("EDITOR");
+  };
+
+  const handleOpenEditGuide = (guide: any) => {
+    setEditingGuideId(guide.id);
+    setGuideForm({
+      title: guide.title || "",
+      category: guide.category || "United Kingdom",
+      readTime: guide.readTime || "5 min read",
+      excerpt: guide.excerpt || "",
+      bannerUrl: guide.bannerUrl || guide.coverImage || "",
+      tags: Array.isArray(guide.tags) ? guide.tags.join(", ") : "",
+      content: guide.content || "",
+    });
+    setGuideViewMode("EDITOR");
+  };
+
+  const handleUploadGuideBanner = async (file: File) => {
+    setGuideBannerUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await higherStudyService.uploadUniversityCover(fd);
+      const uploadedUrl = res?.data?.url || res?.url || "";
+      if (!uploadedUrl) throw new Error("No image URL returned");
+      setGuideForm((prev) => ({ ...prev, bannerUrl: uploadedUrl }));
+    } catch (err: any) {
+      console.error("Banner upload error:", err);
+      alert(err?.response?.data?.message || "Failed to upload cover banner. Please paste an image URL.");
+    } finally {
+      setGuideBannerUploading(false);
+    }
+  };
+
+  const handleSaveGuide = async (targetStatus: "PUBLISHED" | "DRAFT") => {
+    if (!guideForm.title.trim()) {
+      alert("Please enter a Guide Article Title.");
+      return;
+    }
+    if (!guideForm.content.trim()) {
+      alert("Please write the Guide Article Content.");
+      return;
+    }
+    setSavingGuide(true);
+    try {
+      const parsedTags = guideForm.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const payload = {
+        title: guideForm.title.trim(),
+        category: guideForm.category.trim() || "Study Abroad Guide",
+        readTime: guideForm.readTime.trim() || "5 min read",
+        excerpt: guideForm.excerpt.trim(),
+        bannerUrl: guideForm.bannerUrl.trim(),
+        tags: parsedTags,
+        content: guideForm.content,
+        status: targetStatus,
+      };
+
+      if (editingGuideId) {
+        await higherStudyService.updateBlog(editingGuideId, payload);
+      } else {
+        await higherStudyService.createBlog(payload);
+      }
+
+      await refreshAdminGuides();
+      setGuideViewMode("LIST");
+      setEditingGuideId(null);
+      setGuideStatusFilter(targetStatus === "DRAFT" ? "DRAFT" : "ALL");
+    } catch (err: any) {
+      console.error("Failed to save guide:", err);
+      alert(err?.response?.data?.message || "Failed to save guide article");
+    } finally {
+      setSavingGuide(false);
+    }
+  };
+
+  const handleQuickGuideStatusChange = async (
+    guide: any,
+    nextStatus: "PUBLISHED" | "DRAFT" | "TRASH"
+  ) => {
+    try {
+      const updated = await higherStudyService.updateBlog(guide.id, {
+        title: guide.title,
+        content: guide.content,
+        excerpt: guide.excerpt,
+        bannerUrl: guide.bannerUrl || guide.coverImage || "",
+        category: guide.category || "Study Abroad Guide",
+        readTime: guide.readTime || "5 min read",
+        tags: Array.isArray(guide.tags) ? guide.tags : [],
+        status: nextStatus,
+      });
+      await refreshAdminGuides();
+      return updated;
+    } catch (err: any) {
+      console.error("Failed to change guide status:", err);
+      alert(err?.response?.data?.message || "Failed to update guide status");
+    }
+  };
+
+  const handleConfirmDeleteGuide = async () => {
+    if (!guideDeleteTarget) return;
+    setIsDeletingGuide(true);
+    try {
+      if (guideDeleteTarget.hard) {
+        await higherStudyService.deleteBlog(guideDeleteTarget.guide.id);
+      } else {
+        await handleQuickGuideStatusChange(guideDeleteTarget.guide, "TRASH");
+      }
+      await refreshAdminGuides();
+      setGuideDeleteTarget(null);
+    } catch (err: any) {
+      console.error("Failed to delete guide:", err);
+      alert(err?.response?.data?.message || "Failed to delete guide");
+    } finally {
+      setIsDeletingGuide(false);
+    }
+  };
+
   const handleTogglePublishStory = async (story: SuccessStoryItem) => {
     try {
       await successStoryService.updateStory(story.id, {
@@ -2164,7 +2339,12 @@ export default function AdminCommandCenterPage() {
     },
     { id: "HOME_CMS", label: "Home Page", icon: Home },
     { id: "UNIVERSITIES", label: "Universities", icon: Building2, badge: safeUniversities.length || 4 },
-    { id: "GUIDES_CMS", label: "Guides & Blogs", icon: BookOpen },
+    {
+      id: "GUIDES_CMS",
+      label: "Guides & Blogs",
+      icon: BookOpen,
+      badge: adminGuides.filter((g) => g.status !== "DRAFT" && g.status !== "TRASH").length || undefined,
+    },
     { id: "SUCCESS_CMS", label: "Success Stories", icon: Award },
     { id: "CONTACT_CMS", label: "Contact Page", icon: PhoneCall },
     { id: "FINANCIALS", label: "Commissions", icon: DollarSign, badge: safeCommissions.length || 2 },
@@ -2683,6 +2863,77 @@ export default function AdminCommandCenterPage() {
                     uniStatusFilter === "TRASH" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
                   }`}>
                     {trashUnisList.length}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* GUIDES & BLOGS CMS STATUS FILTER PILLS */}
+            {activeTab === "GUIDES_CMS" && (
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuideStatusFilter("ALL");
+                    setGuideViewMode("LIST");
+                    setGuidePage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    guideStatusFilter === "ALL" && guideViewMode === "LIST"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-950/60"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Published</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    guideStatusFilter === "ALL" && guideViewMode === "LIST" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                  }`}>
+                    {adminGuides.filter((g) => g.status !== "DRAFT" && g.status !== "TRASH").length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuideStatusFilter("DRAFT");
+                    setGuideViewMode("LIST");
+                    setGuidePage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    guideStatusFilter === "DRAFT" && guideViewMode === "LIST"
+                      ? "bg-amber-600 text-white shadow-md shadow-amber-950/60"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Drafts</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    guideStatusFilter === "DRAFT" && guideViewMode === "LIST" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                  }`}>
+                    {adminGuides.filter((g) => g.status === "DRAFT").length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuideStatusFilter("TRASH");
+                    setGuideViewMode("LIST");
+                    setGuidePage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    guideStatusFilter === "TRASH" && guideViewMode === "LIST"
+                      ? "bg-rose-600 text-white shadow-md shadow-rose-950/60"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-300" />
+                  <span>Trash</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    guideStatusFilter === "TRASH" && guideViewMode === "LIST" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                  }`}>
+                    {adminGuides.filter((g) => g.status === "TRASH").length}
                   </span>
                 </button>
               </div>
@@ -7330,49 +7581,723 @@ export default function AdminCommandCenterPage() {
         )}
 
         {/* =====================================================================
-            8. TAB: HIGHER STUDY GUIDES & BLOGS CMS
+            8. TAB: HIGHER STUDY GUIDES & BLOGS CMS (FULL DYNAMIC CMS)
         ===================================================================== */}
-        {activeTab === "GUIDES_CMS" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-bold text-white">Study Guides & Blog Articles Desk</h3>
-                <p className="text-xs text-slate-400">Publish visa preparation guides, IELTS requirements, and country handbooks.</p>
-              </div>
+        {activeTab === "GUIDES_CMS" && (() => {
+          const GUIDE_PAGE_SIZE = 6;
+          const statusFiltered = adminGuides.filter((g) => {
+            if (guideStatusFilter === "DRAFT") return g.status === "DRAFT";
+            if (guideStatusFilter === "TRASH") return g.status === "TRASH";
+            return g.status !== "DRAFT" && g.status !== "TRASH";
+          });
 
-              <Button
-                variant="gradient"
-                size="sm"
-                onClick={() => alert("Opening New Guide Authoring Editor...")}
-                className="gap-2 shadow-lg shadow-blue-600/20"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Create New Guide</span>
-              </Button>
-            </div>
+          const filteredGuides = statusFiltered.filter((g) => {
+            const q = guideSearch.trim().toLowerCase();
+            const matchSearch =
+              !q ||
+              (g.title || "").toLowerCase().includes(q) ||
+              (g.excerpt || "").toLowerCase().includes(q) ||
+              (g.category || "").toLowerCase().includes(q) ||
+              (g.tags || []).some((t: string) => t.toLowerCase().includes(q));
+            const matchCat =
+              guideCategoryFilter === "ALL" ||
+              (g.category || "").toLowerCase() === guideCategoryFilter.toLowerCase();
+            return matchSearch && matchCat;
+          });
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { title: "Complete Guide to UK Student Visa (CAS & Bank Statement)", country: "United Kingdom", reads: "4,200 Reads", date: "April 2026" },
-                { title: "Canada SDS vs Non-SDS Study Permit: Everything You Must Know", country: "Canada", reads: "3,850 Reads", date: "March 2026" },
-                { title: "How to Secure 100% Tuition Scholarships in Australia", country: "Australia", reads: "2,900 Reads", date: "February 2026" },
-                { title: "Germany Public University Free Tuition Master's Handbook", country: "Germany", reads: "5,100 Reads", date: "January 2026" },
-              ].map((guide, idx) => (
-                <Card key={idx} className="bg-slate-900/60 border-slate-800/80 p-5 space-y-2 hover:border-slate-700 transition-all">
-                  <div className="flex items-center justify-between text-xs text-blue-400 font-semibold">
-                    <span>{guide.country}</span>
-                    <span className="text-slate-500 font-mono text-[11px]">{guide.reads}</span>
+          const totalGuidePages = Math.max(1, Math.ceil(filteredGuides.length / GUIDE_PAGE_SIZE));
+          const safePage = Math.min(guidePage, totalGuidePages);
+          const paginatedAdminGuides = filteredGuides.slice(
+            (safePage - 1) * GUIDE_PAGE_SIZE,
+            safePage * GUIDE_PAGE_SIZE
+          );
+
+          const guideCategories = Array.from(
+            new Set([
+              "United Kingdom",
+              "Canada",
+              "USA",
+              "Germany",
+              "Australia",
+              "Scholarship",
+              "Visa Guide",
+              ...adminGuides.map((g) => g.category).filter(Boolean),
+            ])
+          );
+
+          return (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              {guideViewMode === "LIST" ? (
+                <>
+                  {/* Top Control Bar: Search, Category Filter, Create Button */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <div className="flex flex-wrap items-center gap-2.5 flex-1">
+                      <div className="relative w-full sm:w-64">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Search guides, topics, tags..."
+                          value={guideSearch}
+                          onChange={(e) => {
+                            setGuideSearch(e.target.value);
+                            setGuidePage(1);
+                          }}
+                          className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <select
+                        value={guideCategoryFilter}
+                        onChange={(e) => {
+                          setGuideCategoryFilter(e.target.value);
+                          setGuidePage(1);
+                        }}
+                        className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="ALL">All Categories</option>
+                        {guideCategories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-end">
+                      <Link
+                        href="/blogs"
+                        target="_blank"
+                        className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                        <span>View Public Page</span>
+                      </Link>
+                      <Button
+                        variant="gradient"
+                        size="sm"
+                        onClick={handleOpenCreateGuide}
+                        className="gap-2 shadow-lg shadow-blue-600/20 cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Create New Guide</span>
+                      </Button>
+                    </div>
                   </div>
-                  <h4 className="text-sm font-bold text-white">{guide.title}</h4>
-                  <div className="pt-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80">
-                    <span>Published: {guide.date}</span>
-                    <button className="text-blue-400 hover:underline">Edit Article</button>
+
+                  {/* Empty State */}
+                  {paginatedAdminGuides.length === 0 ? (
+                    <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
+                      <BookOpen className="w-10 h-10 text-slate-600 mx-auto" />
+                      <div className="text-sm font-bold text-slate-200">
+                        {guideStatusFilter === "DRAFT"
+                          ? "No Draft Guides Found"
+                          : guideStatusFilter === "TRASH"
+                          ? "Trash is Empty"
+                          : "No Published Study Guides Found"}
+                      </div>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        {guideStatusFilter === "ALL"
+                          ? "Click 'Create New Guide' to publish visa preparation handbooks, scholarship tips, and country guides."
+                          : "Switch tabs above or create a new guide article."}
+                      </p>
+                      {guideStatusFilter !== "TRASH" && (
+                        <Button
+                          variant="gradient"
+                          size="sm"
+                          onClick={handleOpenCreateGuide}
+                          className="gap-1.5 text-xs cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Create New Guide</span>
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Guides Cards Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginatedAdminGuides.map((guide) => {
+                          const banner =
+                            guide.bannerUrl ||
+                            guide.coverImage ||
+                            "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80";
+
+                          return (
+                            <div
+                              key={guide.id}
+                              className="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all flex flex-col justify-between"
+                            >
+                              <div>
+                                {/* 16:9 Banner Preview */}
+                                <div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
+                                  <img
+                                    src={banner}
+                                    alt={guide.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                                  {/* Status Badge */}
+                                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-md border ${
+                                        guide.status === "DRAFT"
+                                          ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                          : guide.status === "TRASH"
+                                          ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                                          : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                      }`}
+                                    >
+                                      {guide.status === "DRAFT"
+                                        ? "DRAFT"
+                                        : guide.status === "TRASH"
+                                        ? "TRASH"
+                                        : "PUBLISHED"}
+                                    </span>
+                                  </div>
+
+                                  {/* Category Pill */}
+                                  <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-md text-[10px] font-bold text-blue-400 border border-slate-800">
+                                    {guide.category || "Study Guide"}
+                                  </div>
+
+                                  {/* Read Time */}
+                                  <div className="absolute bottom-2 right-2.5 px-2 py-0.5 rounded bg-slate-950/80 text-[10px] text-slate-300 font-mono">
+                                    {guide.readTime || "5 min read"}
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-4 space-y-2.5">
+                                  {guide.tags && guide.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {guide.tags.slice(0, 3).map((t: string, idx: number) => (
+                                        <span
+                                          key={idx}
+                                          className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 text-[10px] font-medium"
+                                        >
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <h4 className="text-sm font-bold text-white line-clamp-2 leading-snug">
+                                    {guide.title}
+                                  </h4>
+
+                                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                                    {guide.excerpt}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Action Footer */}
+                              <div className="px-4 py-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between gap-2">
+                                <span className="text-[11px] text-slate-500">
+                                  {guide.createdAt
+                                    ? new Date(guide.createdAt).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })
+                                    : "2026"}
+                                </span>
+
+                                <div className="flex items-center gap-1.5">
+                                  {guide.status === "TRASH" ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuickGuideStatusChange(guide, "PUBLISHED")}
+                                        className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold cursor-pointer transition-colors"
+                                        title="Restore & Publish"
+                                      >
+                                        Restore
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuickGuideStatusChange(guide, "DRAFT")}
+                                        className="px-2.5 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-[11px] font-semibold cursor-pointer transition-colors"
+                                        title="Move to Drafts"
+                                      >
+                                        To Draft
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setGuideDeleteTarget({ guide, hard: true })}
+                                        className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800/70 text-rose-300 cursor-pointer transition-colors"
+                                        title="Delete Permanently"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {guide.status === "DRAFT" ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleQuickGuideStatusChange(guide, "PUBLISHED")}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-semibold cursor-pointer transition-colors"
+                                          title="Publish Live"
+                                        >
+                                          Publish
+                                        </button>
+                                      ) : (
+                                        <>
+                                          <Link
+                                            href={`/blogs/${guide.slug}`}
+                                            target="_blank"
+                                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors"
+                                            title="View Live Guide"
+                                          >
+                                            <Eye className="w-3.5 h-3.5 text-blue-400" />
+                                          </Link>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleQuickGuideStatusChange(guide, "DRAFT")}
+                                            className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[10px] font-semibold cursor-pointer transition-colors"
+                                            title="Unpublish and move to Drafts"
+                                          >
+                                            Draft
+                                          </button>
+                                        </>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditGuide(guide)}
+                                        className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-white cursor-pointer transition-colors"
+                                        title="Edit Guide"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setGuideDeleteTarget({ guide, hard: false })}
+                                        className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/50 border border-slate-700/80 hover:border-rose-800/60 text-slate-400 hover:text-rose-400 cursor-pointer transition-colors"
+                                        title="Move to Trash"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Admin Guides Pagination */}
+                      {totalGuidePages > 1 && (
+                        <div className="pt-3 flex items-center justify-between border-t border-slate-800/80 text-xs text-slate-400">
+                          <span>
+                            Page <strong className="text-white">{safePage}</strong> of{" "}
+                            <strong className="text-white">{totalGuidePages}</strong> ({filteredGuides.length} guides)
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage === 1}
+                              onClick={() => setGuidePage((p) => Math.max(1, p - 1))}
+                              className="text-xs cursor-pointer"
+                            >
+                              Prev
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage === totalGuidePages}
+                              onClick={() => setGuidePage((p) => Math.min(totalGuidePages, p + 1))}
+                              className="text-xs cursor-pointer"
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                /* VIEW B: FULL AUTHORING & EDITING STUDIO */
+                <Card className="bg-slate-900/90 border-slate-800 shadow-2xl p-5 sm:p-7 rounded-2xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-800">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-blue-400" />
+                        <span>{editingGuideId ? "Edit Study Guide Article" : "Publish New Study Guide"}</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Upload a 16:9 cover banner, configure category tags, and write structured markdown sections.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setGuideViewMode("LIST");
+                        setEditingGuideId(null);
+                      }}
+                      className="text-xs border-slate-700 cursor-pointer self-start sm:self-auto"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                      <span>Back to Guides</span>
+                    </Button>
+                  </div>
+
+                  <div className="space-y-5 text-xs text-slate-300">
+                    {/* 1. Cover Banner Upload & Preview */}
+                    <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-bold text-slate-200 flex items-center gap-1.5">
+                          <ImageIcon className="w-4 h-4 text-blue-400" />
+                          <span>1. Article Cover Banner (16:9)</span>
+                        </label>
+                        <span className="text-[10px] text-slate-400">Direct Cloudinary Upload or Image URL</span>
+                      </div>
+
+                      <input
+                        ref={guideBannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadGuideBanner(file);
+                        }}
+                        className="hidden"
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div className="md:col-span-7 space-y-2.5">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={guideForm.bannerUrl}
+                              onChange={(e) => setGuideForm({ ...guideForm, bannerUrl: e.target.value })}
+                              placeholder="https://images.unsplash.com/... or click Upload Photo"
+                              className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={guideBannerUploading}
+                              onClick={() => guideBannerInputRef.current?.click()}
+                              className="shrink-0 gap-1.5 cursor-pointer border-blue-500/40 text-blue-300"
+                            >
+                              {guideBannerUploading ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <UploadCloud className="w-3.5 h-3.5" />
+                              )}
+                              <span>{guideBannerUploading ? "Uploading..." : "Upload Photo"}</span>
+                            </Button>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Recommended: 1200×675px landscape image for crisp card and header display.
+                          </p>
+                        </div>
+
+                        <div className="md:col-span-5">
+                          <div className="aspect-video w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-900 flex items-center justify-center">
+                            {guideForm.bannerUrl ? (
+                              <img
+                                src={guideForm.bannerUrl}
+                                alt="Guide banner preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[11px] text-slate-500">Banner Preview (16:9)</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Title, Category & Reading Time */}
+                    <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+                      <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-blue-400" />
+                        <span>2. Headline &amp; Classification</span>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Guide Article Title <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={guideForm.title}
+                          onChange={(e) => setGuideForm({ ...guideForm, title: e.target.value })}
+                          placeholder="e.g. Complete Guide to UK Student Visa (CAS & 28-Day Bank Statement Rule)"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block font-semibold text-slate-300 mb-1.5">
+                            Primary Category / Country
+                          </label>
+                          <input
+                            type="text"
+                            list="guide-category-presets"
+                            value={guideForm.category}
+                            onChange={(e) => setGuideForm({ ...guideForm, category: e.target.value })}
+                            placeholder="e.g. United Kingdom, Scholarship"
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          />
+                          <datalist id="guide-category-presets">
+                            <option value="United Kingdom" />
+                            <option value="Canada" />
+                            <option value="USA" />
+                            <option value="Germany" />
+                            <option value="Australia" />
+                            <option value="Scholarship" />
+                            <option value="Visa Guide" />
+                            <option value="SOP & IELTS" />
+                          </datalist>
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold text-slate-300 mb-1.5">
+                            Estimated Read Time
+                          </label>
+                          <input
+                            type="text"
+                            value={guideForm.readTime}
+                            onChange={(e) => setGuideForm({ ...guideForm, readTime: e.target.value })}
+                            placeholder="e.g. 6 min read"
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-semibold text-slate-300 mb-1.5">
+                            Tags (Comma-separated)
+                          </label>
+                          <input
+                            type="text"
+                            value={guideForm.tags}
+                            onChange={(e) => setGuideForm({ ...guideForm, tags: e.target.value })}
+                            placeholder="UK Visa, CAS, Scholarship"
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick Tag Suggestions */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[11px] text-slate-500 mr-1">Quick Tags:</span>
+                        {["UK Visa", "CAS", "Canada", "USA F-1", "Germany", "Scholarship", "SOP", "IELTS", "Financial Proof"].map(
+                          (sug) => {
+                            const current = guideForm.tags
+                              ? guideForm.tags.split(",").map((t) => t.trim()).filter(Boolean)
+                              : [];
+                            const active = current.includes(sug);
+                            return (
+                              <button
+                                key={sug}
+                                type="button"
+                                onClick={() => {
+                                  const next = active
+                                    ? current.filter((t) => t !== sug)
+                                    : [...current, sug];
+                                  setGuideForm({ ...guideForm, tags: next.join(", ") });
+                                }}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer ${
+                                  active
+                                    ? "bg-blue-600/25 border-blue-500 text-blue-300"
+                                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {active ? `✓ ${sug}` : `+ ${sug}`}
+                              </button>
+                            );
+                          }
+                        )}
+                      </div>
+
+                      {/* Excerpt */}
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Short Card Summary / Excerpt (2–3 sentences)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={guideForm.excerpt}
+                          onChange={(e) => setGuideForm({ ...guideForm, excerpt: e.target.value })}
+                          placeholder="Brief summary displayed on the public Guides card grid..."
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 leading-relaxed"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 3. Rich Article Content Editor */}
+                    <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="font-bold text-slate-200 flex items-center gap-1.5">
+                          <Edit3 className="w-4 h-4 text-blue-400" />
+                          <span>3. Full Guide Article Content <span className="text-rose-400">*</span></span>
+                        </label>
+
+                        {/* 1-Click Formatting Helpers */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGuideForm((prev) => ({
+                                ...prev,
+                                content: `${prev.content}\n\n### Section Heading\nWrite details here...`,
+                              }))
+                            }
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 cursor-pointer"
+                          >
+                            + Heading (###)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGuideForm((prev) => ({
+                                ...prev,
+                                content: `${prev.content}\n\n> **Important Tip:** Write key visa or scholarship advice here.`,
+                              }))
+                            }
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-blue-300 cursor-pointer"
+                          >
+                            + Callout Quote (&gt;)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGuideForm((prev) => ({
+                                ...prev,
+                                content: `${prev.content}\n- First requirement item\n- Second requirement item`,
+                              }))
+                            }
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-300 cursor-pointer"
+                          >
+                            + Bullet List (-)
+                          </button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        rows={12}
+                        value={guideForm.content}
+                        onChange={(e) => setGuideForm({ ...guideForm, content: e.target.value })}
+                        placeholder="Write the full study guide... Use ### for section headings, > for callout boxes, - for bullet points, and **bold** for emphasis."
+                        className="w-full p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
+                      />
+                    </div>
+
+                    {/* Action Bar: Cancel, Save as Draft, Publish */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setGuideViewMode("LIST");
+                          setEditingGuideId(null);
+                        }}
+                        className="text-xs cursor-pointer"
+                      >
+                        Cancel
+                      </Button>
+
+                      <div className="flex items-center gap-2.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={savingGuide}
+                          onClick={() => handleSaveGuide("DRAFT")}
+                          className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10 text-xs cursor-pointer gap-1.5"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{savingGuide ? "Saving..." : "Save to Drafts"}</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="gradient"
+                          disabled={savingGuide}
+                          onClick={() => handleSaveGuide("PUBLISHED")}
+                          className="shadow-lg shadow-blue-600/30 text-xs cursor-pointer gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>
+                            {savingGuide
+                              ? "Publishing..."
+                              : editingGuideId
+                              ? "Update & Publish"
+                              : "Publish Guide Live"}
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </Card>
-              ))}
+              )}
+
+              {/* Modal: Trash or Permanently Delete Guide */}
+              {guideDeleteTarget && (
+                <Modal
+                  isOpen={Boolean(guideDeleteTarget)}
+                  onClose={() => !isDeletingGuide && setGuideDeleteTarget(null)}
+                  title={
+                    guideDeleteTarget.hard
+                      ? "Permanently Delete Study Guide"
+                      : "Move Study Guide to Trash"
+                  }
+                >
+                  <div className="space-y-4 text-xs text-slate-300">
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="font-bold text-white text-sm">
+                        {guideDeleteTarget.guide.title}
+                      </div>
+                      <p className="text-slate-400 leading-relaxed">
+                        {guideDeleteTarget.hard
+                          ? "Are you sure you want to permanently delete this guide? This action will remove the article completely and cannot be undone."
+                          : "This guide will be unpublished from the public website and moved to Trash. You can restore it or move it to Drafts anytime."}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        disabled={isDeletingGuide}
+                        onClick={() => setGuideDeleteTarget(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <button
+                        type="button"
+                        disabled={isDeletingGuide}
+                        onClick={handleConfirmDeleteGuide}
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>
+                          {isDeletingGuide
+                            ? "Processing..."
+                            : guideDeleteTarget.hard
+                            ? "Delete Permanently"
+                            : "Move to Trash"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </Modal>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* =====================================================================
             9. TAB: VISA SUCCESS STORIES CMS

@@ -393,14 +393,14 @@ export const Navbar: React.FC = () => {
 
 						{/* Compact Floating Mobile Popover Card (Screenshot 1 Style) */}
 						{isMobileMenuOpen && (
-							<div className="absolute right-0 top-12 w-60 z-50 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/90 p-2 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
+							<div className="absolute right-0 top-12 w-64 z-50 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800/90 p-2 shadow-2xl shadow-black/80 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
 								{isAuthenticated && user && (
 									<div className="flex items-center justify-between gap-2 px-2.5 py-2 mb-1.5 rounded-xl bg-slate-900/80 border border-slate-800/70">
-										<div className="min-w-0">
+										<div className="min-w-0 flex-1">
 											<p className="text-xs font-bold text-white truncate">{user.name}</p>
 											<p className="text-[10px] text-slate-400 truncate">{user.email}</p>
 										</div>
-										<RoleBadge role={user.role} />
+										<RoleBadge role={user.role} className="!text-[9px] !px-1.5 !py-0.5 !gap-1" />
 									</div>
 								)}
 

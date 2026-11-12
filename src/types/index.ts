@@ -246,10 +246,15 @@ export interface IBlogPost {
 	bannerUrl?: string;
 	coverImage?: string;
 	category?: string;
+	readTime?: string;
+	status?: "PUBLISHED" | "DRAFT" | "TRASH";
+	isPublished?: boolean;
+	isDeleted?: boolean;
 	tags?: string[];
 	authorId?: string;
 	author?: IUser;
 	createdAt?: string;
+	updatedAt?: string;
 }
 
 // Convenient Aliases for Frontend components

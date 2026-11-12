@@ -7,36 +7,37 @@ export const RoleBadge: React.FC<{
 	role?: Role | string;
 	className?: string;
 }> = ({ role, className }) => {
+	const baseClass = `whitespace-nowrap shrink-0 text-[10px] px-2 py-0.5 gap-1 font-semibold ${className || ""}`;
 	switch (role) {
 		case "SUPER_ADMIN":
 			return (
-				<Badge variant="gold" className={className}>
-					<Shield className="w-3 h-3 text-yellow-400" />
+				<Badge variant="gold" className={baseClass}>
+					<Shield className="w-2.5 h-2.5 text-yellow-400 shrink-0" />
 					<span>SUPER ADMIN</span>
 				</Badge>
 			);
 		case "ADMIN":
 			return (
-				<Badge variant="purple" className={className}>
-					<Award className="w-3 h-3 text-purple-400" />
+				<Badge variant="purple" className={baseClass}>
+					<Award className="w-2.5 h-2.5 text-purple-400 shrink-0" />
 					<span>ADMIN</span>
 				</Badge>
 			);
 		case "COUNSELOR":
 			return (
-				<Badge variant="default" className={className}>
-					<UserCheck className="w-3 h-3 text-blue-400" />
+				<Badge variant="default" className={baseClass}>
+					<UserCheck className="w-2.5 h-2.5 text-blue-400 shrink-0" />
 					<span>COUNSELOR</span>
 				</Badge>
 			);
 		case "STUDENT":
 			return (
-				<Badge variant="success" className={className}>
-					<GraduationCap className="w-3 h-3 text-emerald-400" />
+				<Badge variant="success" className={baseClass}>
+					<GraduationCap className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
 					<span>STUDENT</span>
 				</Badge>
 			);
 		default:
-			return <Badge className={className}>{role || "USER"}</Badge>;
+			return <Badge className={baseClass}>{role || "USER"}</Badge>;
 	}
 };
