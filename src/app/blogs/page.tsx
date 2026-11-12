@@ -101,26 +101,7 @@ export default function BlogsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
-        {/* Clean Minimal Hero Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold tracking-wide">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Knowledge Hub &amp; Study Abroad Guides</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Higher Study Insights &amp;{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
-              Visa Handbooks
-            </span>
-          </h1>
-
-          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Step-by-step guides on university admissions, student visa interviews, financial proof rules, and merit scholarship strategies.
-          </p>
-        </div>
-
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 pb-16 space-y-8">
         {/* Search & Category Filter Bar */}
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/90 backdrop-blur-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Search Input */}

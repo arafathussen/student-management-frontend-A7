@@ -414,6 +414,113 @@ export default function HomePage() {
 				</div>
 			</section>
 
+			{/* =====================================================================
+			    3. HIGHER STUDY GUIDES & VISA HANDBOOKS SHOWCASE (RIGHT AFTER SUCCESS)
+			===================================================================== */}
+			{blogs.length > 0 && (
+				<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<ScrollReveal direction="up" yOffset={24} duration={0.5}>
+						<div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold tracking-wide">
+								<BookOpen className="w-3.5 h-3.5" />
+								<span>Knowledge Hub &amp; Study Abroad Guides</span>
+							</div>
+
+							<h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+								Higher Study Insights &amp;{" "}
+								<span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
+									Visa Handbooks
+								</span>
+							</h2>
+
+							<p className="text-slate-400 text-sm max-w-2xl mx-auto leading-relaxed">
+								Step-by-step guides on university admissions, student visa interviews, financial proof rules, and merit scholarship strategies.
+							</p>
+						</div>
+					</ScrollReveal>
+
+					<ScrollRevealGroup staggerDelay={0.09} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						{blogs.slice(0, 3).map((blog) => {
+							const banner =
+								blog.bannerUrl ||
+								blog.coverImage ||
+								"https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1000&q=80";
+
+							return (
+								<ScrollRevealItem key={blog.id} yOffset={30}>
+									<Link
+										href={`/blogs/${blog.slug}`}
+										className="group rounded-2xl bg-slate-900/70 border border-slate-800/90 hover:border-blue-500/50 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden h-full"
+									>
+										<div>
+											{/* 16:9 Cover Banner */}
+											<div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
+												<img
+													src={banner}
+													alt={blog.title}
+													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+												/>
+												<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+												<div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-md text-[10px] font-bold text-blue-400 border border-slate-800">
+													{blog.category || "Study Abroad Guide"}
+												</div>
+
+												{blog.readTime && (
+													<div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[10px] text-slate-300 font-medium">
+														{blog.readTime}
+													</div>
+												)}
+											</div>
+
+											<div className="p-5 space-y-2.5">
+												<h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+													{blog.title}
+												</h3>
+												<p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+													{blog.excerpt || blog.content}
+												</p>
+											</div>
+										</div>
+
+										<div className="px-5 py-3.5 border-t border-slate-800/70 bg-slate-950/30 flex items-center justify-between text-xs">
+											<span className="text-slate-500 flex items-center gap-1.5">
+												<Calendar className="w-3.5 h-3.5" />
+												{blog.createdAt
+													? new Date(blog.createdAt).toLocaleDateString("en-US", {
+															month: "short",
+															day: "numeric",
+															year: "numeric",
+													  })
+													: "Recent"}
+											</span>
+											<span className="font-semibold text-blue-400 group-hover:underline flex items-center gap-1">
+												<span>Read Guide</span>
+												<ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+											</span>
+										</div>
+									</Link>
+								</ScrollRevealItem>
+							);
+						})}
+					</ScrollRevealGroup>
+
+					{/* Explore All Guides CTA */}
+					<div className="text-center pt-10">
+						<Link href="/blogs">
+							<Button
+								variant="secondary"
+								size="lg"
+								className="gap-2 bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 px-7 py-2.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer font-medium"
+							>
+								<span>Explore All Guides</span>
+								<ArrowRight className="w-4 h-4" />
+							</Button>
+						</Link>
+					</div>
+				</section>
+			)}
+
 			{/* POPULAR STUDY DESTINATIONS */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<ScrollReveal direction="up" yOffset={24} duration={0.5} className="flex items-end justify-between mb-10">
@@ -646,63 +753,6 @@ export default function HomePage() {
 					</ScrollRevealGroup>
 				</ScrollReveal>
 			</section>
-
-			{/* EDUCATIONAL & VISA BLOG HIGHLIGHTS */}
-			{blogs.length > 0 && (
-				<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<ScrollReveal direction="up" yOffset={24} duration={0.5} className="flex items-end justify-between mb-10">
-						<div>
-							<Badge variant="purple" className="mb-2">
-								LATEST INSIGHTS
-							</Badge>
-							<h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-								Visa, Finance & Destination Guides
-							</h2>
-						</div>
-						<Link
-							href="/blogs"
-							className="flex items-center gap-1 text-sm font-semibold text-blue-400 hover:text-blue-300"
-						>
-							<span>All Articles</span>
-							<ArrowRight className="w-4 h-4" />
-						</Link>
-					</ScrollReveal>
-
-					<ScrollRevealGroup staggerDelay={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-						{blogs.map((blog) => (
-							<ScrollRevealItem key={blog.id} yOffset={30}>
-								<Card
-									className="glass-card-hover flex flex-col justify-between border-slate-800/80 p-5 group h-full"
-								>
-									<div>
-										<Badge variant="default" className="mb-3">
-											{blog.category || "Study Abroad Guide"}
-										</Badge>
-										<h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
-											{blog.title}
-										</h3>
-										<p className="text-xs text-slate-400 mt-2 line-clamp-3 leading-relaxed">
-											{blog.content}
-										</p>
-									</div>
-									<div className="mt-5 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
-										<span className="text-slate-500">
-											{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : "Recent"}
-										</span>
-										<Link
-											href={`/blogs/${blog.slug}`}
-											className="font-semibold text-blue-400 group-hover:underline flex items-center gap-1"
-										>
-											<span>Read Article</span>
-											<ArrowRight className="w-3.5 h-3.5" />
-										</Link>
-									</div>
-								</Card>
-							</ScrollRevealItem>
-						))}
-					</ScrollRevealGroup>
-				</section>
-			)}
 
 			{/* CTA BANNER (CONNECT & COUNSELING) */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
