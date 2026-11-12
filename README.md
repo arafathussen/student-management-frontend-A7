@@ -1,85 +1,108 @@
-# Rise Abroad Education — Global University Admission Management System (Frontend)
+# Rise Abroad Education — Global Higher Study & University Admission Management Portal
 
-A modern, responsive fullstack Next.js 16 (App Router) frontend for **Rise Abroad Education**, engineered with TypeScript, Tailwind CSS v4, Radix UI / shadcn primitives, TanStack Query, React Hook Form + Zod, Recharts, Sonner, and Stripe Payment Integration.
-
----
-
-## 🔗 Live Links & Documentation
-
-- **Live Backend API:** `https://riseabroad-server.vercel.app/api/v1`
-- **Backend Repository:** [student-management-backend-A6](https://github.com/arafathussen/student-management-backend-A6)
-- **Interactive API Documentation:** [Postman Published Docs](https://documenter.getpostman.com/view/56453818/2sBYHXPxia)
+A full-stack, responsive **Next.js 16 (App Router)** web platform for **Rise Abroad Education** that unifies international university discovery, multi-step student application processing, counselor verification pipelines, role-based analytics dashboards, real-time support messaging, and Stripe tuition deposit payments.
 
 ---
 
-## 🔐 One-Click Demo Login & RBAC Credentials (3 Roles)
+## Live Links & Project Resources
 
-The `/login` page includes **One-Click Demo Login** buttons for instant evaluation across all 3 primary roles:
+| Resource | Link |
+|---|---|
+| **Project Name** | Rise Abroad Education |
+| **Live Frontend URL** | [https://riseabroadedu.vercel.app](https://riseabroadedu.vercel.app) |
+| **Live Backend URL** | [https://riseabroad-server.vercel.app](https://riseabroad-server.vercel.app) (`https://riseabroad-server.vercel.app/api/v1`) |
+| **Frontend Repository** | [https://github.com/arafathussen/student-management-frontend-A7](https://github.com/arafathussen/student-management-frontend-A7) |
+| **Backend Repository** | [https://github.com/arafathussen/student-management-backend-A6](https://github.com/arafathussen/student-management-backend-A6) |
+| **API Documentation** | [https://documenter.getpostman.com/view/56453818/2sBYHXPxia](https://documenter.getpostman.com/view/56453818/2sBYHXPxia) |
 
-| Role | Email | Password | Key Workflows |
+---
+
+## Website Overview & Core Features
+
+### 1. Public Admissions & Discovery Portal
+- **Landing Showcase (`/`):** Quick search bar paired with study destination country selector, live visa statistics & verified student success stories, latest partner university cards, higher study guides, and institutional portal benefits.
+- **Global University Directory (`/universities` & `/universities/[id]`):** Filterable, URL-synced catalog by country, offer policy, and search keyword, with curated campus photography, tuition breakdowns, scholarship highlights, official program links, and a 3-step student application wizard.
+- **Success Stories (`/success` & `/success/[id]`):** Dynamic student visa grant archive with country filtering, search, YouTube interview embeds, and detailed visa timelines.
+- **Higher Study Guides (`/blogs` & `/blogs/[slug]`):** Structured scholarship, visa interview, and admission articles managed directly from the Admin CMS.
+- **Services, About & Contact (`/services`, `/about`, `/contact`):** Overview of counseling services, agency governance pillars, global office locations, and contact inquiry desk.
+
+### 2. Multi-Role Dashboards (RBAC)
+- **Super Admin Command Center (`/admin`, `/admin/manage`, `/admin/reports`):**
+  - Executive KPI overview and interactive Recharts visualizations (`BarChart`, `PieChart`, `AreaChart`).
+  - Full CRUD management for Users, Partner Universities, Countries, Applications, Success Stories, Blogs/Guides, Home/Contact CMS settings, and Commission Ledgers.
+  - **Super Admin Data & Backup Center:** Full JSON backup export/restore, manual database health ping, Supabase RLS guidance, and automated daily Vercel Cron keep-alive (`/api/keep-alive`).
+- **Senior Counselor Desk (`/counselor`, `/counselor/earnings`, `/counselor/profile`):**
+  - Assigned application verification workflow, document inspection, advisor notes, offer letter issuance, commission earnings tracking, and availability settings.
+- **Student Applicant Portal (`/dashboard`, `/dashboard/payments`, `/dashboard/profile`, `/dashboard/settings`):**
+  - Step-by-step application flight tracker and document checklist, official offer letter downloads, Stripe checkout fee deposits (`/payment/success` & `/payment/cancel`), official PDF receipts, and counselor support chat.
+
+### 3. Security, Performance & UX
+- **Authentication:** JWT session persistence, role-aware Edge Middleware (`src/middleware.ts`), Email 6-digit OTP verification, Password recovery flow, and Google OAuth 2.0 integration.
+- **Responsive Design:** Desktop sidebar + mobile sticky navigation dock across all dashboard workflows, adaptive grids, skeleton loading states, and custom error/404 boundaries.
+
+---
+
+## One-Click Demo Login & RBAC Credentials
+
+The [`/login`](https://riseabroadedu.vercel.app/login) page includes **One-Click Demo Login** buttons for instant evaluation across all 3 primary roles:
+
+| Role | Email | Password | Primary Scope |
 |---|---|---|---|
-| **Super Admin** | `admin@university.com` | `AdminPassword123!` | Analytics charts (`/admin`, `/admin/reports`), User & Resource CRUD (`/admin/manage`), Commission Ledger, CMS |
-| **Senior Counselor** | `counselor@university.com` | `Counselor123!` | Application verification pipeline (`/counselor`), Offer letter issuance, Commission analytics (`/counselor/earnings`), Availability (`/counselor/profile`) |
-| **Student Applicant** | `arafat.student@gmail.com` | `Student123!` | Multi-step program application wizard, Flight Tracker (`/dashboard`), Stripe tuition deposit (`/dashboard/payments`), Official PDF receipts |
+| **Super Admin** | `admin@university.com` | `AdminPassword123!` | Full system control, Analytics, CMS, User & University CRUD, Commissions, Data & Backup |
+| **Senior Counselor** | `counselor@university.com` | `Counselor123!` | Application verification pipeline, Offer letters, Advisor availability, Earnings |
+| **Student Applicant** | `arafat.student@gmail.com` | `Student123!` | Program applications, Document checklist, Stripe tuition deposits, Support chat |
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
-- **Framework:** Next.js 16 (App Router), React 19, TypeScript 5
+- **Framework & Language:** Next.js 16 (App Router), React 19, TypeScript 5
 - **Styling & UI:** Tailwind CSS v4, Radix UI Primitives, Lucide Icons, Framer Motion
-- **Server State & Caching:** TanStack Query v5 (`@tanstack/react-query`)
-- **Forms & Validation:** React Hook Form + `@hookform/resolvers` + Zod v4
-- **Data Visualization:** Recharts (`BarChart`, `PieChart`, `AreaChart`)
-- **Notifications:** Sonner Toast System
-- **Authentication & Route Protection:** Next.js Edge Middleware (`src/middleware.ts`) + `AuthContext` + Google OAuth 2.0
-- **Payment Gateway:** Stripe Checkout (Test Mode) with `/payment/success` & `/payment/cancel` flows
+- **State & Validation:** TanStack Query v5, React Context (`AuthContext`), React Hook Form, Zod v4
+- **Charts & Feedback:** Recharts (`BarChart`, `PieChart`, `AreaChart`), Sonner Toast Notifications
+- **Integrations:** Express 5 / Prisma / PostgreSQL Backend API, Stripe Checkout (Test Mode), Google OAuth 2.0, Vercel Cron Jobs
 
 ---
 
-## 📄 Implemented Application Routes (24+ Pages)
+## Application Routes
 
-### Public Pages
-- `/` — Home / Landing Portal
-- `/universities` — Global University Directory (URL-synced search, filters, sorting, pagination via `useSearchParams`)
-- `/universities/[id]` — University Details & 3-Step Application Wizard
-- `/services` — Admissions, Document Verification, Stripe & Visa Services
-- `/about` — Institutional Overview, Accreditation & Governance Pillars
-- `/blogs` & `/blogs/[slug]` — Higher Study Guides & Articles
-- `/success` & `/success/[id]` — Student Visa & Admission Success Stories
-- `/contact` — Global Office Directory & Inquiry Desk
+### Public Routes
+- `/` — Landing Portal (Success Stories, Partner Universities, Higher Study Guides)
+- `/universities` & `/universities/[id]` — Accredited University Catalog & Program Application Wizard
+- `/success` & `/success/[id]` — Student Visa & Admission Success Archive
+- `/services` — Admissions, Verification, Stripe & Visa Services
+- `/blogs` & `/blogs/[slug]` — Higher Study Guides & Visa Handbooks
+- `/contact` — Office Directory & Inquiry Submission
+- `/about` — Institutional Overview & Accreditation Pillars
 
-### Authentication
-- `/login` — Sign In with **One-Click Demo Login (3 Roles)**, Zod validation & Google OAuth
-- `/register` — Student Registration with Country Code Picker & Zod validation
+### Authentication & Recovery
+- `/login` — Sign In with One-Click Demo Login (3 Roles) & Google OAuth
+- `/register` — Student Registration with Country Code Picker
 - `/verify-otp` — 6-Digit Email OTP Verification
-- `/forgot-password` & `/reset-password` — Account Recovery Flow
+- `/forgot-password` & `/reset-password` — Account Password Recovery
 
-### Role-Specific Protected Dashboards
-- **Admin:** `/admin` (Command Center), `/admin/manage` (Resource & User CRUD), `/admin/reports` (Recharts Analytics & Financial Audit)
-- **Counselor:** `/counselor` (Application & Document Desk), `/counselor/earnings` (Commission Analytics), `/counselor/profile` (Advisor Profile & Availability)
-- **Student:** `/dashboard` (Application Flight Tracker & Checklist), `/dashboard/payments` (Stripe Invoices & PDF Receipts), `/dashboard/profile`, `/dashboard/settings`
-
-### Payment & System Boundaries
-- `/payment/success` — Stripe Payment Verification & Receipt Confirmation
-- `/payment/cancel` — Stripe Checkout Cancellation & Retry Flow
-- `src/app/loading.tsx` & `src/app/error.tsx` & `src/app/not-found.tsx` — Skeleton Loaders, Error Boundary & Custom 404
+### Protected Dashboards & Payments
+- **Super Admin / Admin:** `/admin`, `/admin/manage`, `/admin/reports`
+- **Counselor:** `/counselor`, `/counselor/earnings`, `/counselor/profile`
+- **Student:** `/dashboard`, `/dashboard/payments`, `/dashboard/profile`, `/dashboard/settings`
+- **Payments & Automation:** `/payment/success`, `/payment/cancel`, `/api/keep-alive`
 
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 ```bash
 # 1. Install dependencies
 npm install
 
 # 2. Configure environment variables (.env.local)
-# NEXT_PUBLIC_API_URL=https://riseabroad-server.vercel.app/api/v1
-# (or http://localhost:5000/api/v1 for local backend)
+NEXT_PUBLIC_API_URL=https://riseabroad-server.vercel.app/api/v1
+# (or http://localhost:5000/api/v1 when running backend locally)
 
 # 3. Start development server
 npm run dev
 
-# 4. Production build check
+# 4. Run typecheck & production build
+npx tsc --noEmit
 npm run build
 ```
