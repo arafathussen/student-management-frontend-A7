@@ -353,8 +353,8 @@ export default function AdminCommandCenterPage() {
   const [creatingComm, setCreatingComm] = useState(false);
   const [commSuccess, setCommSuccess] = useState(false);
 
-  // University creation & edit modal state
-  const [uniModalOpen, setUniModalOpen] = useState(false);
+  // University creation & edit studio state
+  const [uniViewMode, setUniViewMode] = useState<"LIST" | "EDITOR">("LIST");
   const [editingUniId, setEditingUniId] = useState<string | null>(null);
   const [uniStatusFilter, setUniStatusFilter] = useState<"ALL" | "DRAFT" | "TRASH">("ALL");
 
@@ -1108,13 +1108,20 @@ export default function AdminCommandCenterPage() {
     offerLetterPaymentType: "FREE",
     website: "",
     coverImageUrl: "",
+    scholarshipHighlight: "",
+    excerpt: "",
+    programsCtaLabel: "View Official Programs",
+    programsCtaUrl: "",
     description: "",
     tags: "",
     status: "PUBLISHED" as "PUBLISHED" | "DRAFT",
-    programs: [
-      { name: "Computer Science & AI", degreeLevel: "BACHELOR", tuitionFee: 15500, durationYears: 4, intakeSeason: "Sep / Jan" },
-      { name: "Global MBA & Management", degreeLevel: "MASTER", tuitionFee: 18500, durationYears: 2, intakeSeason: "Sep / Feb" },
-    ],
+    programs: [] as Array<{
+      name: string;
+      degreeLevel: string;
+      tuitionFee: number;
+      durationYears: number;
+      intakeSeason: string;
+    }>,
   });
   const [creatingUni, setCreatingUni] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -1557,15 +1564,16 @@ export default function AdminCommandCenterPage() {
       offerLetterPaymentType: "FREE",
       website: "",
       coverImageUrl: "",
+      scholarshipHighlight: "",
+      excerpt: "",
+      programsCtaLabel: "View Official Programs",
+      programsCtaUrl: "",
       description: "",
-      tags: "UK, Top Ranked, Scholarship",
+      tags: "UK, Scholarship, Hostel Available",
       status: "PUBLISHED",
-      programs: [
-        { name: "Computer Science & AI", degreeLevel: "BACHELOR", tuitionFee: 15500, durationYears: 4, intakeSeason: "Sep / Jan" },
-        { name: "Global MBA & Management", degreeLevel: "MASTER", tuitionFee: 18500, durationYears: 2, intakeSeason: "Sep / Feb" },
-      ],
+      programs: [],
     });
-    setUniModalOpen(true);
+    setUniViewMode("EDITOR");
   };
 
   const handleOpenEditUniModal = (uni: University) => {
@@ -1579,22 +1587,16 @@ export default function AdminCommandCenterPage() {
       offerLetterPaymentType: uni.offerLetterPaymentType || "FREE",
       website: uni.website || "",
       coverImageUrl: uni.coverImageUrl || uni.bannerUrl || "",
+      scholarshipHighlight: uni.scholarshipHighlight || "",
+      excerpt: uni.excerpt || "",
+      programsCtaLabel: uni.programsCtaLabel || "View Official Programs",
+      programsCtaUrl: uni.programsCtaUrl || uni.website || "",
       description: uni.description || "",
       tags: Array.isArray(uni.tags) ? uni.tags.join(", ") : "",
       status: (uni.status === "DRAFT" || uni.isDraft) ? "DRAFT" : "PUBLISHED",
-      programs: uni.programs && uni.programs.length > 0 
-        ? uni.programs.map((p) => ({
-            name: p.name || p.title || "",
-            degreeLevel: p.degreeLevel || p.level || "BACHELOR",
-            tuitionFee: Number(p.tuitionFee) || 15000,
-            durationYears: Number(p.durationYears) || 3,
-            intakeSeason: p.intakeSeason || p.intake || "Sep / Jan"
-          }))
-        : [
-            { name: "Computer Science & AI", degreeLevel: "BACHELOR", tuitionFee: 15500, durationYears: 4, intakeSeason: "Sep / Jan" }
-          ],
+      programs: [],
     });
-    setUniModalOpen(true);
+    setUniViewMode("EDITOR");
   };
 
   const handleCoverFileUpload = async (file: File) => {
@@ -1658,15 +1660,20 @@ export default function AdminCommandCenterPage() {
         ? newUni.tags.split(",").map((t) => t.trim()).filter(Boolean)
         : [];
 
+      const ctaUrl = newUni.programsCtaUrl.trim() || newUni.website.trim();
       const payload = {
-        name: newUni.name,
+        name: newUni.name.trim(),
         countryId: newUni.countryId,
-        city: newUni.city,
+        city: newUni.city.trim(),
         minTuitionFee: Number(newUni.minTuitionFee) || 0,
         maxTuitionFee: Number(newUni.maxTuitionFee) || 0,
         offerLetterPaymentType: newUni.offerLetterPaymentType,
-        website: newUni.website,
+        website: ctaUrl,
         coverImageUrl: newUni.coverImageUrl || undefined,
+        scholarshipHighlight: newUni.scholarshipHighlight.trim(),
+        excerpt: newUni.excerpt.trim(),
+        programsCtaLabel: newUni.programsCtaLabel.trim() || "View Official Programs",
+        programsCtaUrl: ctaUrl,
         description: newUni.description,
         status: publishStatus,
         isDraft: publishStatus === "DRAFT",
@@ -1676,28 +1683,16 @@ export default function AdminCommandCenterPage() {
       if (editingUniId) {
         await higherStudyService.updateUniversity(editingUniId, payload);
       } else {
-        const created = await higherStudyService.createUniversity(payload);
-        const uniId = created.data?.id || created.id;
-        
-        if (uniId && newUni.programs && newUni.programs.length > 0) {
-          for (const prog of newUni.programs) {
-            if (prog.name?.trim()) {
-              await higherStudyService.createProgram({
-                name: prog.name,
-                universityId: uniId,
-                degreeLevel: prog.degreeLevel || "BACHELOR",
-                tuitionFee: Number(prog.tuitionFee) || Number(newUni.minTuitionFee) || 12000,
-                durationYears: Number(prog.durationYears) || 3,
-                initialDeposit: Number(newUni.offerLetterPaymentType === "FREE" ? 0 : 500),
-                intakeSeason: prog.intakeSeason || "Sep / Jan"
-              }).catch(() => null);
-            }
-          }
-        }
+        await higherStudyService.createUniversity(payload);
       }
 
-      setUniModalOpen(false);
+      setUniViewMode("LIST");
       setEditingUniId(null);
+      setUniStatusFilter(publishStatus === "DRAFT" ? "DRAFT" : "ALL");
+      setUniToast({
+        type: "success",
+        message: publishStatus === "DRAFT" ? "University post saved to Drafts." : "University post published live!",
+      });
       await fetchAdminData();
     } catch (err: any) {
       console.error("Failed to save university", err);
@@ -2809,7 +2804,10 @@ export default function AdminCommandCenterPage() {
                 {/* 1. All */}
                 <button
                   type="button"
-                  onClick={() => setUniStatusFilter("ALL")}
+                  onClick={() => {
+                    setUniStatusFilter("ALL");
+                    setUniViewMode("LIST");
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     uniStatusFilter === "ALL"
                       ? "bg-blue-600 text-white shadow-md shadow-blue-950/60"
@@ -2829,7 +2827,10 @@ export default function AdminCommandCenterPage() {
                 {/* 2. Draft */}
                 <button
                   type="button"
-                  onClick={() => setUniStatusFilter("DRAFT")}
+                  onClick={() => {
+                    setUniStatusFilter("DRAFT");
+                    setUniViewMode("LIST");
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     uniStatusFilter === "DRAFT"
                       ? "bg-amber-600 text-white shadow-md shadow-amber-950/60"
@@ -2849,7 +2850,10 @@ export default function AdminCommandCenterPage() {
                 {/* 3. Deleted / Trash */}
                 <button
                   type="button"
-                  onClick={() => setUniStatusFilter("TRASH")}
+                  onClick={() => {
+                    setUniStatusFilter("TRASH");
+                    setUniViewMode("LIST");
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     uniStatusFilter === "TRASH"
                       ? "bg-rose-600 text-white shadow-md shadow-rose-950/60"
@@ -7347,235 +7351,697 @@ export default function AdminCommandCenterPage() {
         )}
 
         {/* =====================================================================
-            7. TAB: UNIVERSITIES CATALOG
+            7. TAB: UNIVERSITIES POSTS CMS (GUIDE-STYLE STUDIO + SINGLE POST WORKFLOW)
         ===================================================================== */}
         {activeTab === "UNIVERSITIES" && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Header & Primary CTA */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">Partner Institutions Catalog</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                    uniStatusFilter === "ALL" 
-                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                      : uniStatusFilter === "DRAFT"
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                  }`}>
-                    {uniStatusFilter === "ALL" ? `All (${displayedUniversities.length})` : uniStatusFilter === "DRAFT" ? `Drafts (${displayedUniversities.length})` : `Trash (${displayedUniversities.length})`}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {uniStatusFilter === "ALL" 
-                    ? "Manage global universities, official programs, tuition fee ranges, and admission policies." 
-                    : uniStatusFilter === "DRAFT"
-                    ? "Unpublished university posts saved as draft. Review and publish anytime."
-                    : "Archived/Deleted institutions in trash. Restore them back or purge permanently."}
-                </p>
-              </div>
+            {uniViewMode === "LIST" ? (
+              <>
+                {/* Header & Primary CTA */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-white">Partner Universities Posts</h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                        uniStatusFilter === "ALL" 
+                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                          : uniStatusFilter === "DRAFT"
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                      }`}>
+                        {uniStatusFilter === "ALL" ? `All (${displayedUniversities.length})` : uniStatusFilter === "DRAFT" ? `Drafts (${displayedUniversities.length})` : `Trash (${displayedUniversities.length})`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {uniStatusFilter === "ALL" 
+                        ? "Publish complete single-post university profiles with cover thumbnail, scholarships, hostel info, and official program link button." 
+                        : uniStatusFilter === "DRAFT"
+                        ? "Unpublished university posts saved as draft. Review and publish anytime."
+                        : "Archived/Deleted institutions in trash. Restore them back or purge permanently."}
+                    </p>
+                  </div>
 
-              <Button
-                variant="gradient"
-                size="sm"
-                onClick={handleOpenCreateUniModal}
-                className="gap-2 shadow-lg shadow-blue-600/20 self-start sm:self-auto cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Add Partner University</span>
-              </Button>
-            </div>
-
-            {/* Action Feedback Banner / Toast */}
-            {uniToast && (
-              <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-2 duration-300 ${
-                uniToast.type === "success"
-                  ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                  : "bg-rose-950/40 border-rose-500/40 text-rose-300"
-              }`}>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="font-semibold">{uniToast.message}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUniToast(null)}
-                  className="text-slate-400 hover:text-white p-1 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {displayedUniversities.length === 0 ? (
-              <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
-                <Building2 className="w-12 h-12 text-slate-600 mx-auto" />
-                <h4 className="text-base font-bold text-white">
-                  {uniStatusFilter === "DRAFT" ? "No Draft Universities" : uniStatusFilter === "TRASH" ? "Trash is Empty" : "No Universities Found"}
-                </h4>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  {uniStatusFilter === "DRAFT" 
-                    ? "You have not saved any draft posts yet. Add a new university and click 'Save as Draft'."
-                    : uniStatusFilter === "TRASH"
-                    ? "No deleted universities found in the trash."
-                    : "Get started by publishing your first accredited partner university."}
-                </p>
-                {uniStatusFilter === "ALL" && (
-                  <Button variant="primary" size="sm" onClick={handleOpenCreateUniModal} className="mt-2">
-                    Create First University
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    onClick={handleOpenCreateUniModal}
+                    className="gap-2 shadow-lg shadow-blue-600/20 self-start sm:self-auto cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Add Partner University</span>
                   </Button>
-                )}
-              </div>
-            ) : (
-              /* Universities Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {displayedUniversities.map((uni) => {
-                  const coverImg = uni.coverImageUrl || uni.bannerUrl;
-                  const isDraft = !uni.isDeleted && (uni.status === "DRAFT" || uni.isDraft);
-                  const isDeleted = uni.isDeleted;
+                </div>
 
-                  return (
-                    <Card key={uni.id} className="bg-slate-900/60 border-slate-800/80 hover:border-slate-700 transition-all p-0 overflow-hidden flex flex-col justify-between group shadow-xl">
-                      <div>
-                        {/* 16:9 Thumbnail Cover */}
-                        <div className="relative w-full aspect-[16/9] bg-slate-950 border-b border-slate-800 overflow-hidden">
-                          {coverImg ? (
+                {/* Action Feedback Banner / Toast */}
+                {uniToast && (
+                  <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-2 duration-300 ${
+                    uniToast.type === "success"
+                      ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                      : "bg-rose-950/40 border-rose-500/40 text-rose-300"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="font-semibold">{uniToast.message}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUniToast(null)}
+                      className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {displayedUniversities.length === 0 ? (
+                  <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
+                    <Building2 className="w-12 h-12 text-slate-600 mx-auto" />
+                    <h4 className="text-base font-bold text-white">
+                      {uniStatusFilter === "DRAFT" ? "No Draft Universities" : uniStatusFilter === "TRASH" ? "Trash is Empty" : "No Universities Found"}
+                    </h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      {uniStatusFilter === "DRAFT" 
+                        ? "You have not saved any draft posts yet. Click 'Add Partner University' and click 'Save as Draft'."
+                        : uniStatusFilter === "TRASH"
+                        ? "No deleted universities found in the trash."
+                        : "Get started by publishing your first complete university post."}
+                    </p>
+                    {uniStatusFilter === "ALL" && (
+                      <Button variant="primary" size="sm" onClick={handleOpenCreateUniModal} className="mt-2">
+                        Create First University Post
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  /* Universities Grid */
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {displayedUniversities.map((uni) => {
+                      const coverImg = uni.coverImageUrl || uni.bannerUrl;
+                      const isDraft = !uni.isDeleted && (uni.status === "DRAFT" || uni.isDraft);
+                      const isDeleted = uni.isDeleted;
+
+                      return (
+                        <Card key={uni.id} className="bg-slate-900/60 border-slate-800/80 hover:border-slate-700 transition-all p-0 overflow-hidden flex flex-col justify-between group shadow-xl">
+                          <div>
+                            {/* 16:9 Thumbnail Cover */}
+                            <div className="relative w-full aspect-[16/9] bg-slate-950 border-b border-slate-800 overflow-hidden">
+                              {coverImg ? (
+                                <img
+                                  src={coverImg}
+                                  alt={uni.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/70 flex items-center justify-center">
+                                  <Building2 className="w-10 h-10 text-blue-400/30" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
+
+                              {/* Status Badge overlay */}
+                              <div className="absolute top-2.5 left-2.5">
+                                {isDeleted ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-rose-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
+                                    Deleted / Trash
+                                  </span>
+                                ) : isDraft ? (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
+                                    Draft
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
+                                    Published
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Country pill overlay */}
+                              <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-md border border-slate-700/60 text-[10px] font-semibold text-slate-200 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-rose-400" />
+                                <span>{uni.city}{uni.country?.name ? `, ${uni.country.name}` : ""}</span>
+                              </div>
+
+                              <div className="absolute bottom-2.5 left-3 right-3">
+                                <h4 className="font-bold text-white text-sm sm:text-base truncate drop-shadow">
+                                  {uni.name}
+                                </h4>
+                              </div>
+                            </div>
+
+                            {/* Card Content Body */}
+                            <div className="p-4 space-y-3">
+                              {/* Tags */}
+                              {uni.tags && uni.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {uni.tags.slice(0, 3).map((tag, tIdx) => (
+                                    <span key={tIdx} className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-[10px] font-medium border border-blue-500/20">
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                                {uni.excerpt || uni.description || "Leading global university post."}
+                              </p>
+
+                              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs gap-2">
+                                <div className="min-w-0">
+                                  <span className="text-[10px] text-slate-500 block uppercase">Tuition / Aid</span>
+                                  <span className="font-mono text-emerald-400 font-bold truncate block">
+                                    {uni.scholarshipHighlight || `$${(uni.minTuitionFee || 12000).toLocaleString()} - $${(uni.maxTuitionFee || 25000).toLocaleString()}`}
+                                  </span>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[10px] text-slate-500 block uppercase">Action CTA</span>
+                                  <span className="text-[10px] text-blue-300 font-semibold">
+                                    {uni.programsCtaLabel || "View Official Programs"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between gap-2">
+                            <Link
+                              href={`/universities/${slugify(uni.name) || uni.id}`}
+                              target="_blank"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-blue-400 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Page</span>
+                            </Link>
+
+                            <div className="flex items-center gap-1.5">
+                              {isDeleted ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRestoreUniversity(uni.id)}
+                                    title="Restore from Trash"
+                                    className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all cursor-pointer"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenUniDeleteModal(uni, true)}
+                                    title="Delete Permanently"
+                                    className="p-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditUniModal(uni)}
+                                    title="Edit University Post"
+                                    className="p-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-white transition-all cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenUniDeleteModal(uni, false)}
+                                    title="Move to Trash"
+                                    className="p-1.5 rounded-lg bg-slate-850 hover:bg-rose-950/40 border border-slate-700/80 hover:border-rose-800/60 text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* UNIVERSITY SINGLE-POST AUTHORING & EDITING STUDIO (GUIDE-STYLE) */
+              <Card className="bg-slate-900/90 border-slate-800 shadow-2xl p-5 sm:p-7 rounded-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-800">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-blue-400" />
+                      <span>{editingUniId ? "Edit University Post" : "Create New University Post"}</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Write a single complete university guide including scholarships, hostel costs, admission notes, and an official programs link button.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUniViewMode("LIST");
+                      setEditingUniId(null);
+                    }}
+                    className="text-xs border-slate-700 cursor-pointer self-start sm:self-auto"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                    <span>Back to Universities</span>
+                  </Button>
+                </div>
+
+                <form className="space-y-5 text-xs text-slate-300">
+                  {/* 1. Thumbnail / Cover Photo Upload (16:9) */}
+                  <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-blue-400" />
+                        <span>1. University Thumbnail / Cover Banner (16:9)</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400">Direct Cloudinary Upload or Image URL</span>
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={coverFileInputRef}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleCoverFileUpload(file);
+                      }}
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                      <div className="md:col-span-7 space-y-2.5">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newUni.coverImageUrl}
+                            onChange={(e) => setNewUni({ ...newUni, coverImageUrl: e.target.value })}
+                            placeholder="https://images.unsplash.com/... or click Upload Thumbnail"
+                            className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={coverUploading}
+                            onClick={() => coverFileInputRef.current?.click()}
+                            className="shrink-0 gap-1.5 cursor-pointer border-blue-500/40 text-blue-300"
+                          >
+                            {coverUploading ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <UploadCloud className="w-3.5 h-3.5" />
+                            )}
+                            <span>{coverUploading ? "Uploading..." : "Upload Thumbnail"}</span>
+                          </Button>
+                          {newUni.coverImageUrl && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveCoverImage}
+                              disabled={coverDeleting}
+                              title="Remove thumbnail"
+                              className="px-2.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/70 text-rose-300 cursor-pointer shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Recommended: 1200×675px campus or banner thumbnail for public directory cards and hero header.
+                        </p>
+                      </div>
+
+                      <div className="md:col-span-5">
+                        <div className="aspect-video w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-900 flex items-center justify-center">
+                          {newUni.coverImageUrl ? (
                             <img
-                              src={coverImg}
-                              alt={uni.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
+                              src={newUni.coverImageUrl}
+                              alt="University thumbnail preview"
+                              className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-950/60 via-slate-900 to-indigo-950/70 flex items-center justify-center">
-                              <Building2 className="w-10 h-10 text-blue-400/30" />
-                            </div>
+                            <span className="text-[11px] text-slate-500">Thumbnail Preview (16:9)</span>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
-
-                          {/* Status Badge overlay */}
-                          <div className="absolute top-2.5 left-2.5">
-                            {isDeleted ? (
-                              <span className="px-2 py-0.5 rounded-md bg-rose-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
-                                Deleted / Trash
-                              </span>
-                            ) : isDraft ? (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
-                                Draft
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/90 text-white text-[10px] font-bold uppercase tracking-wider shadow">
-                                Published
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Country pill overlay */}
-                          <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-md border border-slate-700/60 text-[10px] font-semibold text-slate-200 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-rose-400" />
-                            <span>{uni.city}{uni.country?.name ? `, ${uni.country.name}` : ""}</span>
-                          </div>
-
-                          <div className="absolute bottom-2.5 left-3 right-3">
-                            <h4 className="font-bold text-white text-sm sm:text-base truncate drop-shadow">
-                              {uni.name}
-                            </h4>
-                          </div>
-                        </div>
-
-                        {/* Card Content Body */}
-                        <div className="p-4 space-y-3">
-                          {/* Tags */}
-                          {uni.tags && uni.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {uni.tags.slice(0, 3).map((tag, tIdx) => (
-                                <span key={tIdx} className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-[10px] font-medium border border-blue-500/20">
-                                  #{tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                            {uni.description || "Leading global university with world-class faculty and comprehensive degree programs."}
-                          </p>
-
-                          <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-                            <div>
-                              <span className="text-[10px] text-slate-500 block uppercase">Tuition Fee</span>
-                              <span className="font-mono text-emerald-400 font-bold">
-                                ${(uni.minTuitionFee || 12000).toLocaleString()} - ${(uni.maxTuitionFee || 25000).toLocaleString()}
-                                <span className="text-[10px] text-slate-500 font-normal"> /yr</span>
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-[10px] text-slate-500 block uppercase">Mode</span>
-                              <span className="text-[10px] text-slate-300 font-bold uppercase">
-                                {uni.offerLetterPaymentType || "FREE"}
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Card Footer Actions */}
-                      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between gap-2">
-                        <Link
-                          href={`/universities/${slugify(uni.name) || uni.id}`}
-                          target="_blank"
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-blue-400 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  {/* 2. University Details, Tuition & Scholarship Highlight */}
+                  <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+                    <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-400" />
+                      <span>2. Institution Info, Scholarship &amp; Highlights</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-1">
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          University Full Name <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={newUni.name}
+                          onChange={(e) => setNewUni({ ...newUni, name: e.target.value })}
+                          placeholder="e.g. University of Greenwich"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Country <span className="text-rose-400">*</span>
+                        </label>
+                        <select
+                          value={newUni.countryId}
+                          onChange={(e) => setNewUni({ ...newUni, countryId: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          required
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Page</span>
-                        </Link>
-
-                        <div className="flex items-center gap-1.5">
-                          {isDeleted ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleRestoreUniversity(uni.id)}
-                                title="Restore from Trash"
-                                className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all cursor-pointer"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenUniDeleteModal(uni, true)}
-                                title="Delete Permanently"
-                                className="p-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditUniModal(uni)}
-                                title="Edit University"
-                                className="p-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-700/80 text-slate-200 hover:text-white transition-all cursor-pointer"
-                              >
-                                <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenUniDeleteModal(uni, false)}
-                                title="Move to Trash"
-                                className="p-1.5 rounded-lg bg-slate-850 hover:bg-rose-950/40 border border-slate-700/80 hover:border-rose-800/60 text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                          <option value="">Select Country</option>
+                          {safeCountries.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    </Card>
-                  );
-                })}
-              </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          City / Campus Location <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={newUni.city}
+                          onChange={(e) => setNewUni({ ...newUni, city: e.target.value })}
+                          placeholder="e.g. London / Larnaca"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Scholarship / Highlight Badge Text
+                        </label>
+                        <input
+                          type="text"
+                          value={newUni.scholarshipHighlight}
+                          onChange={(e) => setNewUni({ ...newUni, scholarshipHighlight: e.target.value })}
+                          placeholder="e.g. Up to 50% Scholarship • €3,500/yr"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Min Tuition ($/yr)
+                        </label>
+                        <input
+                          type="number"
+                          value={newUni.minTuitionFee}
+                          onChange={(e) => setNewUni({ ...newUni, minTuitionFee: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Max Tuition ($/yr)
+                        </label>
+                        <input
+                          type="number"
+                          value={newUni.maxTuitionFee}
+                          onChange={(e) => setNewUni({ ...newUni, maxTuitionFee: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Offer Letter Access Policy
+                        </label>
+                        <select
+                          value={newUni.offerLetterPaymentType}
+                          onChange={(e) => setNewUni({ ...newUni, offerLetterPaymentType: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="FREE">FREE - Instant Offer Download</option>
+                          <option value="DEPOSIT_REQUIRED">DEPOSIT_REQUIRED - Deposit Verification</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Tags (Comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          value={newUni.tags}
+                          onChange={(e) => setNewUni({ ...newUni, tags: e.target.value })}
+                          placeholder="UK, Scholarship, Hostel Available, IELTS Waiver"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Tags */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] text-slate-500 mr-1">Quick Tags:</span>
+                      {["UK", "Cyprus", "USA", "Canada", "Germany", "Scholarship", "Hostel Available", "Low Tuition", "IELTS Waiver"].map((suggested) => {
+                        const currentTags = newUni.tags ? newUni.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+                        const isSelected = currentTags.includes(suggested);
+                        return (
+                          <button
+                            key={suggested}
+                            type="button"
+                            onClick={() => {
+                              const next = isSelected
+                                ? currentTags.filter((t) => t !== suggested)
+                                : [...currentTags, suggested];
+                              setNewUni({ ...newUni, tags: next.join(", ") });
+                            }}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-600/25 border-blue-500 text-blue-300"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {isSelected ? `✓ ${suggested}` : `+ ${suggested}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Card Summary / Excerpt */}
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">
+                        Short Card Summary (Shown on Directory Cards)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={newUni.excerpt}
+                        onChange={(e) => setNewUni({ ...newUni, excerpt: e.target.value })}
+                        placeholder="Optional short 1-2 line overview for the university card..."
+                        className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Official Programs Link & Selectable CTA Button */}
+                  <div className="p-4 rounded-2xl bg-slate-950/70 border border-blue-900/40 space-y-4">
+                    <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                      <ExternalLink className="w-4 h-4 text-blue-400" />
+                      <span>3. Official Programs Link &amp; Action Button</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Official Programs / University Link URL
+                        </label>
+                        <input
+                          type="url"
+                          value={newUni.programsCtaUrl || newUni.website}
+                          onChange={(e) =>
+                            setNewUni({
+                              ...newUni,
+                              programsCtaUrl: e.target.value,
+                              website: e.target.value,
+                            })
+                          }
+                          placeholder="https://university.edu/programs"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-blue-300 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-300 mb-1.5">
+                          Selected Action Button Label
+                        </label>
+                        <input
+                          type="text"
+                          value={newUni.programsCtaLabel}
+                          onChange={(e) => setNewUni({ ...newUni, programsCtaLabel: e.target.value })}
+                          placeholder="e.g. View Official Programs"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Selectable Button Presets */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] text-slate-400 mr-1">Select Button Preset:</span>
+                      {[
+                        "View Official Programs",
+                        "Explore Degree Courses",
+                        "Check All Subjects & Fees",
+                        "Visit Official Website",
+                        "Programs & Admission Portal",
+                      ].map((preset) => {
+                        const active = newUni.programsCtaLabel === preset;
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setNewUni({ ...newUni, programsCtaLabel: preset })}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                              active
+                                ? "bg-blue-600 text-white border-blue-500"
+                                : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 4. Rich Post Content Editor (Scholarships, Hostel, Fees, Requirements) */}
+                  <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <Edit3 className="w-4 h-4 text-blue-400" />
+                        <span>4. Full University Details Post (Scholarships, Hostel, Tuition, Intakes)</span>
+                      </label>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewUni((prev) => ({
+                              ...prev,
+                              description: `${prev.description}\n\n### Scholarships & Tuition Fees\n- Merit Scholarship: Up to 50%\n- Annual Tuition: $12,000 - $18,000`,
+                            }))
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 cursor-pointer"
+                        >
+                          + Scholarship Section
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewUni((prev) => ({
+                              ...prev,
+                              description: `${prev.description}\n\n### Student Hostel & Living Cost\n- Campus Dormitory: Available for international students\n- Estimated Monthly Living: $450 - $700`,
+                            }))
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-300 cursor-pointer"
+                        >
+                          + Hostel Section
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewUni((prev) => ({
+                              ...prev,
+                              description: `${prev.description}\n\n> **Key Admission Highlight:** Direct admission with MOI / IELTS waiver options for eligible applicants.`,
+                            }))
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-blue-300 cursor-pointer"
+                        >
+                          + Callout Quote (&gt;)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewUni((prev) => ({
+                              ...prev,
+                              description: `${prev.description}\n[View Official Programs](${prev.programsCtaUrl || "https://example.edu/programs"})`,
+                            }))
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-amber-300 cursor-pointer"
+                        >
+                          + Inline Link
+                        </button>
+                      </div>
+                    </div>
+
+                    <textarea
+                      rows={12}
+                      value={newUni.description}
+                      onChange={(e) => setNewUni({ ...newUni, description: e.target.value })}
+                      placeholder="Write complete university details manually... Include Tuition fees, exact Scholarship amount/%, Hostel facilities & cost, Entry requirements, Intakes, and Course overview. Supports ### Headings, > Quotes, - Bullet lists, **bold**, and [Link Text](url)."
+                      className="w-full p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setUniViewMode("LIST");
+                        setEditingUniId(null);
+                      }}
+                      className="text-xs cursor-pointer"
+                    >
+                      Cancel
+                    </Button>
+
+                    <div className="flex items-center gap-2.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={creatingUni}
+                        onClick={(e) => handleSaveUniversity(e, "DRAFT")}
+                        className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10 text-xs cursor-pointer gap-1.5"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{creatingUni ? "Saving..." : "Save as Draft"}</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="gradient"
+                        disabled={creatingUni}
+                        onClick={(e) => handleSaveUniversity(e, "PUBLISHED")}
+                        className="shadow-lg shadow-blue-600/30 text-xs cursor-pointer gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>
+                          {creatingUni
+                            ? "Saving..."
+                            : editingUniId
+                            ? "Update & Publish Post"
+                            : "Publish University Post"}
+                        </span>
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              </Card>
             )}
           </div>
         )}
@@ -9574,407 +10040,6 @@ export default function AdminCommandCenterPage() {
         )}
           </>
         )}
-
-        {/* Global Create / Edit Partner University Modal */}
-        <Modal
-          isOpen={uniModalOpen}
-          onClose={() => setUniModalOpen(false)}
-          title={editingUniId ? "Edit Partner University" : "Add Partner University"}
-          maxWidth="xl"
-          footer={
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setUniModalOpen(false)}
-                className="cursor-pointer"
-              >
-                Cancel
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  disabled={creatingUni}
-                  onClick={(e) => handleSaveUniversity(e, "DRAFT")}
-                  className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10 cursor-pointer text-xs"
-                >
-                  <FileText className="w-3.5 h-3.5 mr-1 text-amber-400" />
-                  <span>{creatingUni ? "Saving..." : "Save as Draft"}</span>
-                </Button>
-
-                <Button
-                  variant="gradient"
-                  type="button"
-                  disabled={creatingUni}
-                  onClick={(e) => handleSaveUniversity(e, "PUBLISHED")}
-                  className="shadow-lg shadow-blue-600/30 cursor-pointer text-xs"
-                >
-                  <Check className="w-3.5 h-3.5 mr-1" />
-                  <span>{creatingUni ? "Saving..." : editingUniId ? "Update & Publish" : "Publish University"}</span>
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <form className="space-y-4 text-xs text-slate-300 pr-1 pb-1">
-            {/* 1. Direct Cloudinary Cover Photo Upload & Compact Live Preview */}
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-200 flex items-center gap-1.5 text-xs">
-                  <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
-                  <span>University Cover Photo</span>
-                </label>
-                <span className="text-[10px] text-blue-400/90 font-medium">16:9 • PNG, JPG, WEBP</span>
-              </div>
-
-              {/* Hidden File Input */}
-              <input
-                type="file"
-                ref={coverFileInputRef}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleCoverFileUpload(file);
-                }}
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                className="hidden"
-              />
-
-              {/* Compact Upload Dropzone OR Uploading State OR Compact Preview Card */}
-              {coverUploading ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-500/40 bg-blue-950/20 text-slate-200">
-                  <RefreshCw className="w-5 h-5 text-blue-400 animate-spin shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white">Uploading to Cloudinary...</p>
-                    <p className="text-[10px] text-slate-400">Optimizing format and generating secure CDN URL</p>
-                  </div>
-                </div>
-              ) : newUni.coverImageUrl ? (
-                <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 shadow-md">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={newUni.coverImageUrl}
-                      alt="University cover"
-                      className="w-20 h-12 rounded-lg object-cover border border-slate-700 shrink-0 shadow-sm"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-200 truncate">Cover Photo</span>
-                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold">
-                          Cloudinary Hosted
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">High-speed CDN ready</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => coverFileInputRef.current?.click()}
-                      disabled={coverDeleting}
-                      title="Replace with another image"
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors cursor-pointer"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Replace</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoverImage}
-                      disabled={coverDeleting}
-                      title="Delete image from Cloudinary"
-                      className="px-2.5 py-1 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      {coverDeleting ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                      )}
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  onClick={() => coverFileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files?.[0];
-                    if (file) handleCoverFileUpload(file);
-                  }}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-dashed border-slate-700 hover:border-blue-500/60 bg-slate-950/60 hover:bg-blue-950/15 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 group-hover:bg-blue-500/20 transition-all shrink-0">
-                      <UploadCloud className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0 text-left">
-                      <p className="text-xs font-bold text-white group-hover:text-blue-300 transition-colors truncate">
-                        Click or drag & drop university cover photo
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                        Direct upload to Cloudinary • Recommended 16:9
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-semibold shrink-0 group-hover:bg-blue-600/30 transition-colors">
-                    Browse
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Basic Info (Name, Country, City) */}
-            <Input
-              label="University Full Name"
-              value={newUni.name}
-              onChange={(e) => setNewUni({ ...newUni, name: e.target.value })}
-              placeholder="e.g. University of Manchester, American University of Cyprus"
-              required
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="font-medium text-slate-300 block mb-1">Country</label>
-                <select
-                  value={newUni.countryId}
-                  onChange={(e) => setNewUni({ ...newUni, countryId: e.target.value })}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
-                  required
-                >
-                  <option value="">Select Country</option>
-                  {safeCountries.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Input
-                label="City / Campus Location"
-                value={newUni.city}
-                onChange={(e) => setNewUni({ ...newUni, city: e.target.value })}
-                placeholder="e.g. Manchester, Larnaca"
-                required
-              />
-            </div>
-
-            {/* 3. Custom Tags (comma-separated keywords) */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-medium text-slate-300 flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Custom Tags & Highlights</span>
-                </label>
-                <span className="text-[10px] text-slate-500">Comma-separated keywords</span>
-              </div>
-              <Input
-                placeholder="e.g. UK, Russell Group, STEM, Scholarship, Top 100"
-                value={newUni.tags}
-                onChange={(e) => setNewUni({ ...newUni, tags: e.target.value })}
-              />
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {["UK", "Cyprus", "USA", "Canada", "Scholarship", "Fast Visa", "STEM", "Low Tuition", "IELTS Waiver"].map((suggested) => {
-                  const currentTags = newUni.tags ? newUni.tags.split(",").map((t) => t.trim()) : [];
-                  const isSelected = currentTags.includes(suggested);
-                  return (
-                    <button
-                      key={suggested}
-                      type="button"
-                      onClick={() => {
-                        if (isSelected) {
-                          setNewUni({
-                            ...newUni,
-                            tags: currentTags.filter((t) => t !== suggested).join(", "),
-                          });
-                        } else {
-                          setNewUni({
-                            ...newUni,
-                            tags: currentTags.length ? `${newUni.tags}, ${suggested}` : suggested,
-                          });
-                        }
-                      }}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
-                        isSelected
-                          ? "bg-blue-600/30 border-blue-500 text-blue-200"
-                          : "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700/70 hover:border-slate-600"
-                      }`}
-                    >
-                      {isSelected ? `✓ ${suggested}` : `+ ${suggested}`}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. Financials & Offer Letter Access Mode */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input
-                label="Min Tuition Fee ($/yr)"
-                type="number"
-                value={newUni.minTuitionFee}
-                onChange={(e) => setNewUni({ ...newUni, minTuitionFee: Number(e.target.value) })}
-                required
-              />
-
-              <Input
-                label="Max Tuition Fee ($/yr)"
-                type="number"
-                value={newUni.maxTuitionFee}
-                onChange={(e) => setNewUni({ ...newUni, maxTuitionFee: Number(e.target.value) })}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="font-medium text-slate-300 block mb-1">
-                  Offer Letter Access Policy
-                </label>
-                <select
-                  value={newUni.offerLetterPaymentType}
-                  onChange={(e) =>
-                    setNewUni({ ...newUni, offerLetterPaymentType: e.target.value })
-                  }
-                  className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
-                >
-                  <option value="FREE">FREE - Student downloads offer instantly</option>
-                  <option value="DEPOSIT_REQUIRED">DEPOSIT_REQUIRED - Tuition deposit required</option>
-                </select>
-              </div>
-
-              <Input
-                label="Official Website URL"
-                value={newUni.website}
-                onChange={(e) => setNewUni({ ...newUni, website: e.target.value })}
-                placeholder="https://www.manchester.ac.uk"
-              />
-            </div>
-
-            {/* 5. Rich Description with Bold and Link hint */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="font-medium text-slate-300 block">
-                  Detailed Description & Content
-                </label>
-                <span className="text-[10px] text-emerald-400 font-medium">
-                  Supports **bold text** and [Link Name](https://url)
-                </span>
-              </div>
-              <textarea
-                rows={3}
-                value={newUni.description}
-                onChange={(e) => setNewUni({ ...newUni, description: e.target.value })}
-                placeholder="Type comprehensive details... Use **bold text** or add links like [Visit Harvard](https://harvard.edu)."
-                className="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* 6. Subjects / Degree Programs Manager */}
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
-                  <GraduationCap className="w-4 h-4 text-indigo-400" />
-                  <span>Academic Degree Programs ({newUni.programs.length})</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setNewUni({
-                      ...newUni,
-                      programs: [
-                        ...newUni.programs,
-                        { name: "", degreeLevel: "BACHELOR", tuitionFee: 15000, durationYears: 3, intakeSeason: "Sep / Jan" },
-                      ],
-                    })
-                  }
-                  className="px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Add Course / Subject</span>
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-44 overflow-y-auto custom-scrollbar pr-1">
-                {newUni.programs.map((prog, pIdx) => (
-                  <div key={pIdx} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Program Name (e.g. B.Sc in Computer Science)"
-                        value={prog.name}
-                        onChange={(e) => {
-                          const updated = [...newUni.programs];
-                          updated[pIdx].name = e.target.value;
-                          setNewUni({ ...newUni, programs: updated });
-                        }}
-                        className="flex-1 p-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white"
-                        required
-                      />
-                      <select
-                        value={prog.degreeLevel}
-                        onChange={(e) => {
-                          const updated = [...newUni.programs];
-                          updated[pIdx].degreeLevel = e.target.value;
-                          setNewUni({ ...newUni, programs: updated });
-                        }}
-                        className="p-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white"
-                      >
-                        <option value="BACHELOR">Bachelor</option>
-                        <option value="MASTER">Master</option>
-                        <option value="FOUNDATION">Foundation</option>
-                        <option value="PHD">PhD</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = newUni.programs.filter((_, idx) => idx !== pIdx);
-                          setNewUni({ ...newUni, programs: updated });
-                        }}
-                        className="p-1.5 text-rose-400 hover:text-rose-300 cursor-pointer"
-                        title="Remove program"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      <div>
-                        <span className="text-slate-400 block mb-0.5">Tuition Fee ($/yr):</span>
-                        <input
-                          type="number"
-                          value={prog.tuitionFee}
-                          onChange={(e) => {
-                            const updated = [...newUni.programs];
-                            updated[pIdx].tuitionFee = Number(e.target.value);
-                            setNewUni({ ...newUni, programs: updated });
-                          }}
-                          className="w-full p-1 bg-slate-950 border border-slate-700 rounded text-white"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block mb-0.5">Duration:</span>
-                        <input
-                          type="number"
-                          value={prog.durationYears}
-                          onChange={(e) => {
-                            const updated = [...newUni.programs];
-                            updated[pIdx].durationYears = Number(e.target.value);
-                            setNewUni({ ...newUni, programs: updated });
-                          }}
-                          className="w-full p-1 bg-slate-950 border border-slate-700 rounded text-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </form>
-        </Modal>
 
         {/* Modal: Delete University Confirmation */}
         {selectedUniForDelete && (

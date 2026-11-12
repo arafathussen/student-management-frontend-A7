@@ -33,46 +33,88 @@ import {
   ArrowRight
 } from "lucide-react";
 
-// Formatted Description renderer: parses **bold** and [Link Text](url)
+// Rich Markdown Post Renderer: parses ### Headings, > Callout Quotes, - Bullet lists, **bold**, and [Link Text](url)
 function FormattedDescription({ content }: { content: string }) {
   if (!content) return null;
-  const paragraphs = content.split("\n\n");
+
+  const renderInline = (text: string) => {
+    const regex = /(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g;
+    const chunks = text.split(regex);
+    return chunks.map((chunk, cIdx) => {
+      if (chunk.startsWith("[") && chunk.includes("](") && chunk.endsWith(")")) {
+        const closeBracket = chunk.indexOf("](");
+        const title = chunk.slice(1, closeBracket);
+        const url = chunk.slice(closeBracket + 2, -1);
+        return (
+          <a
+            key={cIdx}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 mx-0.5 group"
+          >
+            <span>{title}</span>
+            <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform shrink-0" />
+          </a>
+        );
+      }
+      if (chunk.startsWith("**") && chunk.endsWith("**") && chunk.length >= 4) {
+        return (
+          <strong key={cIdx} className="font-bold text-white">
+            {chunk.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <span key={cIdx}>{chunk}</span>;
+    });
+  };
+
+  const blocks = content.split(/\n{2,}/);
 
   return (
-    <div className="space-y-3.5 text-sm text-slate-300 leading-relaxed">
-      {paragraphs.map((para, pIdx) => {
-        const regex = /(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g;
-        const splitText = para.split(regex);
+    <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
+      {blocks.map((block, bIdx) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+
+        if (trimmed.startsWith("### ") || trimmed.startsWith("## ") || trimmed.startsWith("# ")) {
+          const headingText = trimmed.replace(/^#{1,3}\s+/, "");
+          return (
+            <h3 key={bIdx} className="text-base sm:text-lg font-extrabold text-white pt-2 border-t border-slate-800/60 first:border-t-0 first:pt-0">
+              {renderInline(headingText)}
+            </h3>
+          );
+        }
+
+        if (trimmed.startsWith("> ")) {
+          const quoteText = trimmed.replace(/^>\s+/gm, "");
+          return (
+            <div
+              key={bIdx}
+              className="p-4 rounded-xl bg-blue-950/35 border-l-4 border-blue-500 text-blue-100 text-xs sm:text-sm leading-relaxed"
+            >
+              {renderInline(quoteText)}
+            </div>
+          );
+        }
+
+        const lines = trimmed.split("\n").map((l) => l.trim());
+        if (lines.every((l) => l.startsWith("- ") || l.startsWith("* "))) {
+          return (
+            <ul key={bIdx} className="space-y-2 pl-1">
+              {lines.map((line, lIdx) => (
+                <li key={lIdx} className="flex items-start gap-2.5 text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>{renderInline(line.replace(/^[-*]\s+/, ""))}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
 
         return (
-          <p key={pIdx}>
-            {splitText.map((chunk, cIdx) => {
-              if (chunk.startsWith("[") && chunk.includes("](") && chunk.endsWith(")")) {
-                const closeBracket = chunk.indexOf("](");
-                const title = chunk.slice(1, closeBracket);
-                const url = chunk.slice(closeBracket + 2, -1);
-                return (
-                  <a
-                    key={cIdx}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 mx-0.5 group"
-                  >
-                    <span>{title}</span>
-                    <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  </a>
-                );
-              }
-              if (chunk.startsWith("**") && chunk.endsWith("**") && chunk.length >= 4) {
-                return (
-                  <strong key={cIdx} className="font-bold text-white">
-                    {chunk.slice(2, -2)}
-                  </strong>
-                );
-              }
-              return <span key={cIdx}>{chunk}</span>;
-            })}
+          <p key={bIdx} className="whitespace-pre-line">
+            {renderInline(trimmed)}
           </p>
         );
       })}
@@ -201,6 +243,8 @@ export default function UniversityDetailsPage() {
   }
 
   const coverImg = university.coverImageUrl || university.bannerUrl;
+  const officialLink = university.programsCtaUrl || university.website || "";
+  const officialLabel = university.programsCtaLabel || "View Official Programs";
 
   return (
     <div className="min-h-screen py-8 px-4 max-w-7xl mx-auto space-y-8 page-transition">
@@ -276,7 +320,18 @@ export default function UniversityDetailsPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-right md:text-left">
+              {university.scholarshipHighlight && (
+                <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/30 text-left">
+                  <span className="text-[11px] text-amber-300/80 block uppercase tracking-wider font-semibold">
+                    Scholarship &amp; Aid
+                  </span>
+                  <span className="text-sm sm:text-base font-bold text-amber-300">
+                    {university.scholarshipHighlight}
+                  </span>
+                </div>
+              )}
+
+              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-left">
                 <span className="text-[11px] text-slate-400 block uppercase tracking-wider font-semibold">
                   Estimated Tuition
                 </span>
@@ -286,6 +341,20 @@ export default function UniversityDetailsPage() {
                   <span className="text-xs text-slate-400 font-normal"> / yr</span>
                 </span>
               </div>
+
+              {officialLink && (
+                <a
+                  href={officialLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0"
+                >
+                  <Button variant="gradient" size="md" className="w-full sm:w-auto gap-2 shadow-lg shadow-blue-900/40 cursor-pointer">
+                    <span>{officialLabel}</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -293,17 +362,17 @@ export default function UniversityDetailsPage() {
 
       {/* Main Grid: Left Details (2 cols) & Right Sidebar (1 col) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Programs & Requirements */}
+        {/* Left Column: Complete University Post Content + Official Programs CTA */}
         <div className="lg:col-span-2 space-y-8">
-          {/* About University & Rich Description */}
+          {/* Complete University Post */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-primary-400" />
-                About Institution & Academic Facilities
+                University Overview, Scholarships, Hostel &amp; Admission Guide
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               {university.description ? (
                 <FormattedDescription content={university.description} />
               ) : (
@@ -311,26 +380,63 @@ export default function UniversityDetailsPage() {
                   {`${university.name} is a premier accredited institution located in ${university.city}, ${university.country?.name}. Renowned for modern research facilities, exceptional career outcome rates, and dedicated international student support services.`}
                 </p>
               )}
+
+              {/* Prominent Configurable Official Programs & Course Link Box */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/70 via-slate-900 to-indigo-950/70 border border-blue-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+                    <BookOpen className="w-4 h-4 text-blue-400" />
+                    <span>Explore All Official Degree Programs &amp; Fees</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Open {university.name}&apos;s official catalog to browse complete subjects, tuition breakdown, and department requirements.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0">
+                  {officialLink ? (
+                    <a
+                      href={officialLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/50 flex items-center gap-2 group cursor-pointer"
+                    >
+                      <span>{officialLabel}</span>
+                      <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">Official link not added yet</span>
+                  )}
+
+                  <Link
+                    href="/contact"
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Apply / Free Counseling</span>
+                  </Link>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Academic Degree Programs Available */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-primary-400" />
-                  Available Academic Programs ({university.programs?.length || 0})
-                </CardTitle>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Select a degree program to submit an official admission application
-                </p>
-              </div>
-            </CardHeader>
+          {/* Legacy Programs List (only shown if programs exist) */}
+          {university.programs && university.programs.length > 0 && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-primary-400" />
+                    Featured Degree Programs ({university.programs.length})
+                  </CardTitle>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Select a degree program below to submit an admission application
+                  </p>
+                </div>
+              </CardHeader>
 
-            <CardContent className="space-y-3">
-              {university.programs && university.programs.length > 0 ? (
-                university.programs.map((prog) => (
+              <CardContent className="space-y-3">
+                {university.programs.map((prog) => (
                   <div
                     key={prog.id}
                     className="p-4 rounded-xl bg-slate-900/50 hover:bg-slate-900 border border-slate-800 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
@@ -364,40 +470,10 @@ export default function UniversityDetailsPage() {
                       Apply Now
                     </Button>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-500 italic py-4 text-center">
-                  Standard undergraduate and postgraduate programs available. View official university portal for complete faculty catalog.
-                </p>
-              )}
-
-              {/* Special Official Course Portal Callout Box */}
-              <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/70 via-slate-900 to-indigo-950/70 border border-blue-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-                <div className="space-y-1 text-center sm:text-left">
-                  <div className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
-                    <BookOpen className="w-4 h-4 text-blue-400" />
-                    Looking for more subjects or complete faculty catalog?
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Browse all undergraduate, postgraduate, and specialized research programs on the university's official portal.
-                  </p>
-                </div>
-                {university.website ? (
-                  <a
-                    href={university.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/50 flex items-center gap-2 group cursor-pointer"
-                  >
-                    <span>Visit Official Website</span>
-                    <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  </a>
-                ) : (
-                  <span className="text-xs text-slate-500 italic">Official website link available soon</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Dynamic Document Requirements Preview */}
           <Card>
@@ -569,10 +645,10 @@ export default function UniversityDetailsPage() {
               <span>Contact Admissions Desk</span>
             </Button>
           </Link>
-          {university.website && (
-            <a href={university.website} target="_blank" rel="noopener noreferrer">
-              <Button variant="gradient" size="md" className="gap-2 shadow-lg shadow-blue-950/60">
-                <span>Official Portal</span>
+          {officialLink && (
+            <a href={officialLink} target="_blank" rel="noopener noreferrer">
+              <Button variant="gradient" size="md" className="gap-2 shadow-lg shadow-blue-950/60 cursor-pointer">
+                <span>{officialLabel}</span>
                 <ExternalLink className="w-4 h-4" />
               </Button>
             </a>

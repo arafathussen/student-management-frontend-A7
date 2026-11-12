@@ -99,6 +99,10 @@ export interface IGlobalUniversity {
 	isDraft?: boolean;
 	isDeleted?: boolean;
 	tags?: string[];
+	scholarshipHighlight?: string;
+	programsCtaLabel?: string;
+	programsCtaUrl?: string;
+	excerpt?: string;
 	docRequirements?: any[];
 	programs?: IGlobalProgram[];
 }

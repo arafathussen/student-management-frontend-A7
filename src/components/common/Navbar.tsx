@@ -86,11 +86,11 @@ export const Navbar: React.FC = () => {
 	const navLinks = [
 		{ name: "Home", href: "/", icon: Home, iconBg: "bg-blue-500/15 text-blue-400" },
 		{ name: "Universities", href: "/universities", icon: Building2, iconBg: "bg-indigo-500/15 text-indigo-400" },
-		{ name: "Services", href: "/services", icon: Compass, iconBg: "bg-cyan-500/15 text-cyan-400" },
 		{ name: "Success", href: "/success", icon: Award, iconBg: "bg-amber-500/15 text-amber-400" },
+		{ name: "Services", href: "/services", icon: Compass, iconBg: "bg-cyan-500/15 text-cyan-400" },
 		{ name: "Guides", href: "/blogs", icon: BookOpen, iconBg: "bg-emerald-500/15 text-emerald-400" },
-		{ name: "About", href: "/about", icon: Info, iconBg: "bg-purple-500/15 text-purple-400" },
 		{ name: "Contact", href: "/contact", icon: PhoneCall, iconBg: "bg-teal-500/15 text-teal-400" },
+		{ name: "About", href: "/about", icon: Info, iconBg: "bg-purple-500/15 text-purple-400" },
 	];
 
 	return (

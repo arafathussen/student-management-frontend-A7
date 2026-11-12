@@ -198,6 +198,76 @@ export function encodeBlogPayload(input: {
 	};
 }
 
+export function normalizeUniversity(raw: any) {
+	if (!raw) return raw;
+	const rawTags: string[] = Array.isArray(raw.tags) ? raw.tags : [];
+	let scholarshipHighlight = raw.scholarshipHighlight || "";
+	let programsCtaLabel = raw.programsCtaLabel || "";
+	let programsCtaUrl = raw.programsCtaUrl || "";
+	let excerpt = raw.excerpt || "";
+	const cleanTags: string[] = [];
+
+	for (const tag of rawTags) {
+		if (typeof tag !== "string") continue;
+		if (tag.startsWith("__SCHOLARSHIP:") && tag.endsWith("__")) {
+			scholarshipHighlight = tag.slice("__SCHOLARSHIP:".length, -2);
+		} else if (tag.startsWith("__CTA_LABEL:") && tag.endsWith("__")) {
+			programsCtaLabel = tag.slice("__CTA_LABEL:".length, -2);
+		} else if (tag.startsWith("__CTA_URL:") && tag.endsWith("__")) {
+			programsCtaUrl = tag.slice("__CTA_URL:".length, -2);
+		} else if (tag.startsWith("__EXCERPT:") && tag.endsWith("__")) {
+			excerpt = tag.slice("__EXCERPT:".length, -2);
+		} else if (!tag.startsWith("__")) {
+			cleanTags.push(tag);
+		}
+	}
+
+	const plainDesc = (raw.description || "")
+		.replace(/^#{1,6}\s+/gm, "")
+		.replace(/^>\s+/gm, "")
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+		.replace(/[*_`>-]/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (!excerpt && plainDesc) {
+		excerpt = plainDesc.length > 155 ? `${plainDesc.slice(0, 155)}...` : plainDesc;
+	}
+
+	return {
+		...raw,
+		tags: cleanTags,
+		scholarshipHighlight,
+		programsCtaLabel: programsCtaLabel || "View Official Programs",
+		programsCtaUrl: programsCtaUrl || raw.website || "",
+		excerpt,
+	};
+}
+
+export function encodeUniversityTags(input: {
+	tags?: string[];
+	scholarshipHighlight?: string;
+	programsCtaLabel?: string;
+	programsCtaUrl?: string;
+	excerpt?: string;
+}) {
+	const cleanTags = (input.tags || []).filter((t) => t && !t.startsWith("__"));
+	const metaTags = [...cleanTags];
+	if (input.scholarshipHighlight?.trim()) {
+		metaTags.push(`__SCHOLARSHIP:${input.scholarshipHighlight.trim().slice(0, 120)}__`);
+	}
+	if (input.programsCtaLabel?.trim()) {
+		metaTags.push(`__CTA_LABEL:${input.programsCtaLabel.trim().slice(0, 80)}__`);
+	}
+	if (input.programsCtaUrl?.trim()) {
+		metaTags.push(`__CTA_URL:${input.programsCtaUrl.trim().slice(0, 300)}__`);
+	}
+	if (input.excerpt?.trim()) {
+		metaTags.push(`__EXCERPT:${input.excerpt.trim().slice(0, 220)}__`);
+	}
+	return metaTags;
+}
+
 export const higherStudyService = {
 	getCountries: async () => {
 		const res = await apiClient.get("/higher-study/countries");
@@ -217,16 +287,47 @@ export const higherStudyService = {
 
 	getUniversities: async (params?: Record<string, any>) => {
 		const res = await apiClient.get("/higher-study/universities", { params });
-		return res.data;
+		const body = res.data;
+		if (Array.isArray(body?.data?.data)) {
+			body.data.data = body.data.data.map(normalizeUniversity);
+		} else if (Array.isArray(body?.data)) {
+			body.data = body.data.map(normalizeUniversity);
+		} else if (Array.isArray(body)) {
+			return body.map(normalizeUniversity);
+		}
+		return body;
 	},
 
 	getUniversityDetails: async (id: string) => {
 		const res = await apiClient.get(`/higher-study/universities/${id}`);
-		return res.data;
+		const body = res.data;
+		if (body?.data && typeof body.data === "object") {
+			body.data = normalizeUniversity(body.data);
+		} else if (body && typeof body === "object" && body.id) {
+			return normalizeUniversity(body);
+		}
+		return body;
 	},
 
 	createUniversity: async (payload: any) => {
-		const res = await apiClient.post("/higher-study/universities", payload);
+		const encodedTags = encodeUniversityTags({
+			tags: Array.isArray(payload.tags) ? payload.tags : [],
+			scholarshipHighlight: payload.scholarshipHighlight,
+			programsCtaLabel: payload.programsCtaLabel,
+			programsCtaUrl: payload.programsCtaUrl,
+			excerpt: payload.excerpt,
+		});
+		const cleanPayload = {
+			...payload,
+			tags: encodedTags,
+			website: payload.website || payload.programsCtaUrl || "",
+		};
+		delete cleanPayload.scholarshipHighlight;
+		delete cleanPayload.programsCtaLabel;
+		delete cleanPayload.programsCtaUrl;
+		delete cleanPayload.excerpt;
+
+		const res = await apiClient.post("/higher-study/universities", cleanPayload);
 		return res.data;
 	},
 
@@ -245,7 +346,24 @@ export const higherStudyService = {
 	},
 
 	updateUniversity: async (id: string, payload: any) => {
-		const res = await apiClient.patch(`/higher-study/universities/${id}`, payload);
+		const encodedTags = encodeUniversityTags({
+			tags: Array.isArray(payload.tags) ? payload.tags : [],
+			scholarshipHighlight: payload.scholarshipHighlight,
+			programsCtaLabel: payload.programsCtaLabel,
+			programsCtaUrl: payload.programsCtaUrl,
+			excerpt: payload.excerpt,
+		});
+		const cleanPayload = {
+			...payload,
+			tags: encodedTags,
+			website: payload.website || payload.programsCtaUrl || "",
+		};
+		delete cleanPayload.scholarshipHighlight;
+		delete cleanPayload.programsCtaLabel;
+		delete cleanPayload.programsCtaUrl;
+		delete cleanPayload.excerpt;
+
+		const res = await apiClient.patch(`/higher-study/universities/${id}`, cleanPayload);
 		return res.data;
 	},
 
