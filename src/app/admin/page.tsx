@@ -9083,7 +9083,7 @@ export default function AdminCommandCenterPage() {
                               {/* 16:9 Thumbnail Preview (Flush Edge-to-Edge) */}
                               <div className="relative aspect-video w-full bg-slate-950 overflow-hidden">
                                 <img
-                                  src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80"}
+                                  src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"}
                                   alt={story.studentName}
                                   className="w-full h-full object-cover"
                                 />
@@ -9261,7 +9261,7 @@ export default function AdminCommandCenterPage() {
                                 src={
                                   storyForm.thumbnailUrl ||
                                   storyForm.photoUrl ||
-                                  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80"
+                                  "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"
                                 }
                                 alt={storyForm.studentName || "Preview"}
                                 className="w-full h-full object-cover"

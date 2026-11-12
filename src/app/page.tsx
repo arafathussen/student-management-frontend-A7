@@ -38,7 +38,7 @@ const homeFallbackStories: SuccessStoryItem[] = [
     slug: "arafat-hussen-01",
     studentName: "Arafat Hussen",
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-    thumbnailUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
     homeInstitution: "Dhaka College, Dhaka",
     hometown: "Dhaka",
     country: "Cyprus",
@@ -90,6 +90,7 @@ export default function HomePage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCountry, setSelectedCountry] = useState("ALL");
 	const [isLoading, setIsLoading] = useState(true);
+	const [successLoaded, setSuccessLoaded] = useState(false);
 
 	const [successSettings, setSuccessSettings] = useState<SuccessPageSettings>({
 		badgeText: "Real Students • Real Visas • Proven Results",
@@ -105,18 +106,39 @@ export default function HomePage() {
 		stat4Value: "15+",
 		stat4Label: "Study Destinations",
 	});
-	const [successStories, setSuccessStories] = useState<SuccessStoryItem[]>(homeFallbackStories);
+	const [successStories, setSuccessStories] = useState<SuccessStoryItem[]>([]);
 
 	useEffect(() => {
 		document.title = "Home | Rise Abroad Education";
+
+		const loadSuccessData = async () => {
+			try {
+				const [sSettingsRes, sStoriesRes] = await Promise.all([
+					successStoryService.getSettings().catch(() => null),
+					successStoryService.getStories({ limit: 6 }).catch(() => null),
+				]);
+
+				if (sSettingsRes) setSuccessSettings(sSettingsRes);
+
+				const rawStories = sStoriesRes?.data || (Array.isArray(sStoriesRes) ? sStoriesRes : null);
+				if (Array.isArray(rawStories) && rawStories.length > 0) {
+					setSuccessStories(rawStories);
+				} else {
+					setSuccessStories(homeFallbackStories);
+				}
+			} catch {
+				setSuccessStories(homeFallbackStories);
+			} finally {
+				setSuccessLoaded(true);
+			}
+		};
+
 		const loadInitialData = async () => {
 			try {
-				const [countriesRes, unisRes, blogsRes, sSettingsRes, sStoriesRes] = await Promise.all([
+				const [countriesRes, unisRes, blogsRes] = await Promise.all([
 					higherStudyService.getCountries(),
 					higherStudyService.getUniversities({ limit: 6 }),
 					higherStudyService.getBlogs({ limit: 3 }),
-					successStoryService.getSettings().catch(() => null),
-					successStoryService.getStories({ limit: 6 }).catch(() => null),
 				]);
 				const rawCountries = countriesRes?.data?.data || countriesRes?.data || countriesRes;
 				if (Array.isArray(rawCountries)) setCountries(rawCountries);
@@ -138,19 +160,14 @@ export default function HomePage() {
 						.filter((b: any) => b.status !== "DRAFT" && b.status !== "TRASH")
 						.slice(0, 3)
 				);
-
-				if (sSettingsRes) setSuccessSettings(sSettingsRes);
-
-				const rawStories = sStoriesRes?.data || (Array.isArray(sStoriesRes) ? sStoriesRes : null);
-				if (Array.isArray(rawStories) && rawStories.length > 0) {
-					setSuccessStories(rawStories);
-				}
 			} catch (err) {
 				console.error("Failed to load home page data", err);
 			} finally {
 				setIsLoading(false);
 			}
 		};
+
+		loadSuccessData();
 		loadInitialData();
 	}, []);
 
@@ -281,7 +298,7 @@ export default function HomePage() {
 								</div>
 								<div className="min-w-0 flex-1">
 									<div className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-tight">
-										<AnimatedCounter value={successSettings.stat1Value || "98.4%"} duration={1300} />
+										<AnimatedCounter value={successSettings.stat1Value || "98.4%"} duration={1100} ready={successLoaded} />
 									</div>
 									<div className="text-xs text-slate-400 truncate mt-0.5">{successSettings.stat1Label || "Visa Success Rate"}</div>
 								</div>
@@ -294,7 +311,7 @@ export default function HomePage() {
 								</div>
 								<div className="min-w-0 flex-1">
 									<div className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-tight">
-										<AnimatedCounter value={successSettings.stat2Value || "1,250+"} duration={1300} />
+										<AnimatedCounter value={successSettings.stat2Value || "1,250+"} duration={1100} ready={successLoaded} />
 									</div>
 									<div className="text-xs text-slate-400 truncate mt-0.5">{successSettings.stat2Label || "Visas Approved"}</div>
 								</div>
@@ -307,7 +324,7 @@ export default function HomePage() {
 								</div>
 								<div className="min-w-0 flex-1">
 									<div className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-tight">
-										<AnimatedCounter value={successSettings.stat3Value || "50%+"} duration={1300} />
+										<AnimatedCounter value={successSettings.stat3Value || "50%+"} duration={1100} ready={successLoaded} />
 									</div>
 									<div className="text-xs text-slate-400 truncate mt-0.5">{successSettings.stat3Label || "Average Scholarship"}</div>
 								</div>
@@ -320,7 +337,7 @@ export default function HomePage() {
 								</div>
 								<div className="min-w-0 flex-1">
 									<div className="text-lg sm:text-2xl font-bold tracking-tight text-white leading-tight">
-										<AnimatedCounter value={successSettings.stat4Value || "15+"} duration={1300} />
+										<AnimatedCounter value={successSettings.stat4Value || "15+"} duration={1100} ready={successLoaded} />
 									</div>
 									<div className="text-xs text-slate-400 truncate mt-0.5">{successSettings.stat4Label || "Study Destinations"}</div>
 								</div>
@@ -330,6 +347,24 @@ export default function HomePage() {
 				</ScrollReveal>
 
 				{/* Latest 6 Success Cards Grid */}
+				{!successLoaded ? (
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+						{[1, 2, 3].map((idx) => (
+							<div
+								key={idx}
+								className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden"
+							>
+								<div className="aspect-video w-full bg-slate-800" />
+								<div className="p-5 space-y-3">
+									<div className="h-5 w-2/3 rounded bg-slate-800" />
+									<div className="h-3.5 w-1/2 rounded bg-slate-800/70" />
+									<div className="h-16 w-full rounded-xl bg-slate-800/60" />
+									<div className="h-8 w-full rounded-xl bg-slate-800/70" />
+								</div>
+							</div>
+						))}
+					</div>
+				) : (
 				<ScrollRevealGroup staggerDelay={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{successStories.slice(0, 6).map((story) => (
 						<ScrollRevealItem key={story.id} yOffset={30}>
@@ -337,8 +372,12 @@ export default function HomePage() {
 								{/* Flush 16:9 Thumbnail Preview */}
 								<Link href={`/success/${story.slug || story.id}`} className="block relative aspect-video w-full overflow-hidden bg-slate-950 cursor-pointer">
 									<img
-										src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80"}
+										src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"}
 										alt={story.studentName}
+										onError={(e) => {
+											e.currentTarget.onerror = null;
+											e.currentTarget.src = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80";
+										}}
 										className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
 									/>
 									<div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md text-[10px] font-bold">
@@ -407,6 +446,7 @@ export default function HomePage() {
 						</ScrollRevealItem>
 					))}
 				</ScrollRevealGroup>
+				)}
 
 				{/* "More" / View All Stories CTA */}
 				<div className="text-center pt-10">
@@ -527,7 +567,7 @@ export default function HomePage() {
 							const banner =
 								blog.bannerUrl ||
 								blog.coverImage ||
-								"https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1000&q=80";
+								"https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80";
 
 							return (
 								<ScrollRevealItem key={blog.id} yOffset={30}>
@@ -541,6 +581,10 @@ export default function HomePage() {
 												<img
 													src={banner}
 													alt={blog.title}
+													onError={(e) => {
+														e.currentTarget.onerror = null;
+														e.currentTarget.src = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80";
+													}}
 													className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
 												/>
 												<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />

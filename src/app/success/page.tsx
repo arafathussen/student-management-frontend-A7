@@ -36,7 +36,7 @@ const fallbackStories: SuccessStoryItem[] = [
     slug: "arafat-hussen-01",
     studentName: "Arafat Hussen",
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-    thumbnailUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
     homeInstitution: "Dhaka College, Dhaka",
     hometown: "Dhaka",
     country: "Cyprus",
@@ -423,8 +423,12 @@ export default function SuccessPage() {
                   className="block relative aspect-video w-full overflow-hidden bg-slate-950 cursor-pointer"
                 >
                   <img
-                    src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80"}
+                    src={story.thumbnailUrl || story.photoUrl || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"}
                     alt={story.studentName}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80";
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md text-[10px] font-bold">

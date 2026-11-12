@@ -191,7 +191,7 @@ export default function BlogsPage() {
                 const banner =
                   blog.bannerUrl ||
                   blog.coverImage ||
-                  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1000&q=80";
+                  "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80";
 
                 return (
                   <Link
