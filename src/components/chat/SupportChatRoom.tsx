@@ -42,6 +42,7 @@ export interface SupportChatRoomProps {
   studentUserId?: string;
   applicationId?: string;
   studentName?: string;
+  studentAvatarUrl?: string;
   applicationTitle?: string;
 }
 
@@ -49,6 +50,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
   studentUserId,
   applicationId,
   studentName = "Student",
+  studentAvatarUrl,
   applicationTitle,
 }) => {
   const { user } = useAuth();
@@ -96,6 +98,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
     agentImage?: string;
     agentRole?: string;
   } | null>(null);
+  const [studentImgError, setStudentImgError] = useState(false);
   const lastMarkedReadIdRef = useRef<string | null>(null);
 
   // Dedicated chat internal scroll container
@@ -578,10 +581,24 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                 </div>
               )
             ) : (
-              // Staff sees student avatar
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20 text-base">
-                {studentName[0] || "S"}
-              </div>
+              // Staff sees student profile photo (with initials fallback)
+              (() => {
+                const resolvedStudentAvatar =
+                  studentAvatarUrl ||
+                  messages.find((m) => m.senderId === effectiveStudentId)?.sender?.imageUrl;
+                return resolvedStudentAvatar && !studentImgError ? (
+                  <img
+                    src={resolvedStudentAvatar}
+                    alt={studentName}
+                    onError={() => setStudentImgError(true)}
+                    className="w-11 h-11 rounded-2xl object-cover border border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20 text-base">
+                    {studentName[0] || "S"}
+                  </div>
+                );
+              })()
             )}
 
             {/* Dynamic Status Dot Indicator */}
@@ -869,43 +886,6 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
               className="py-1 px-2 text-[11px] border-amber-600/40 text-amber-300 hover:bg-amber-900/50 cursor-pointer"
             >
               <X className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Staff In-Chat Student Budget Bar */}
-      {isStaff && (
-        <div className="bg-slate-950/70 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-slate-400">
-            <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Applicant Target Budget:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={targetBudget}
-              onChange={(e) => setTargetBudget(e.target.value)}
-              className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-0.5 text-xs text-white"
-            />
-            <select
-              value={preferredCurrency}
-              onChange={(e) => setPreferredCurrency(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-0.5 text-xs text-white"
-            >
-              <option value="GBP">GBP (£)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="USD">USD ($)</option>
-              <option value="BDT">BDT (৳)</option>
-            </select>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleUpdateBudget}
-              isLoading={isUpdatingBudget}
-              className="py-0 px-2.5 text-[11px] border-slate-700 cursor-pointer"
-            >
-              Update
             </Button>
           </div>
         </div>
