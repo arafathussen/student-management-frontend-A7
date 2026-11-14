@@ -201,6 +201,7 @@ export interface IChatMessage {
 	senderDisplayName?: string;
 	senderRoleBadge?: string;
 	senderId: string;
+	isRead?: boolean;
 	sender?: {
 		id: string;
 		name: string;

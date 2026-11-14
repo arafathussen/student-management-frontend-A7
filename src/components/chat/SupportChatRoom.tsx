@@ -34,6 +34,8 @@ import {
   Calendar,
   MessageSquare,
   FileText,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export interface SupportChatRoomProps {
@@ -82,6 +84,20 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
   } | null>(null);
   const [myHandoverPending, setMyHandoverPending] = useState(false);
 
+  // Staff Presence & Stealth/Invisible Mode
+  const [isStealthMode, setIsStealthMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(`riseabroad_chat_stealth_${user?.id || "staff"}`) === "1";
+  });
+  const [staffPresence, setStaffPresence] = useState<{
+    online: boolean;
+    agentId?: string;
+    agentName?: string;
+    agentImage?: string;
+    agentRole?: string;
+  } | null>(null);
+  const lastMarkedReadIdRef = useRef<string | null>(null);
+
   // Dedicated chat internal scroll container
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,13 +122,59 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
   const fetchChat = async () => {
     if (!effectiveStudentId) return;
     try {
-      const res = await chatService.getOrCreateRoom(
-        effectiveStudentId,
-        applicationId
-      );
+      const [res, presenceRes] = await Promise.all([
+        chatService.getOrCreateRoom(effectiveStudentId, applicationId),
+        !isStaff
+          ? fetch(`/api/chat-presence?studentUserId=${encodeURIComponent(effectiveStudentId)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
       if (res.data) {
         setRoom(res.data);
-        setMessages(res.data.messages || []);
+        const serverMessages: IChatMessage[] = res.data.messages || [];
+        setMessages((prev) => {
+          const pendingOptimistic = prev.filter((m) => m.id.startsWith("optimistic-"));
+          if (pendingOptimistic.length === 0) return serverMessages;
+          const remaining = pendingOptimistic.filter(
+            (opt) =>
+              !serverMessages.some(
+                (srv) => srv.senderId === opt.senderId && srv.message === opt.message
+              )
+          );
+          return [...serverMessages, ...remaining];
+        });
+
+        // Mark student messages as read ONLY if staff is NOT in stealth/invisible mode
+        if (isStaff && !isStealthMode) {
+          const unreadIncoming = serverMessages.filter(
+            (m) => m.senderId !== user?.id && !m.isRead
+          );
+          const latestUnreadId = unreadIncoming[unreadIncoming.length - 1]?.id;
+          if (latestUnreadId && latestUnreadId !== lastMarkedReadIdRef.current) {
+            lastMarkedReadIdRef.current = latestUnreadId;
+            chatService.markMessagesAsRead(effectiveStudentId).catch(() => {});
+          }
+        }
+      }
+
+      if (!isStaff) {
+        let localPresence: any = null;
+        try {
+          const raw = localStorage.getItem(`riseabroad_presence_${effectiveStudentId}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.online && Date.now() - parsed.updatedAt < 12000) {
+              localPresence = parsed;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        const resolvedPresence =
+          localPresence?.online ? localPresence : presenceRes?.online ? presenceRes : null;
+        setStaffPresence(resolvedPresence);
       }
     } catch (error) {
       console.error("Failed to load chat room", error);
@@ -124,10 +186,112 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
   useEffect(() => {
     if (effectiveStudentId) {
       fetchChat();
-      const interval = setInterval(fetchChat, 3500);
+      const interval = setInterval(fetchChat, 2000);
       return () => clearInterval(interval);
     }
-  }, [effectiveStudentId, applicationId]);
+  }, [effectiveStudentId, applicationId, isStaff, isStealthMode]);
+
+  // Publish live presence when Staff has this student's inbox open (unless Stealth/Invisible Mode is ON)
+  useEffect(() => {
+    if (!isStaff || !effectiveStudentId) return;
+
+    const channel =
+      typeof BroadcastChannel !== "undefined"
+        ? new BroadcastChannel("riseabroad-chat-presence")
+        : null;
+
+    const broadcastPresence = (online: boolean) => {
+      const payload = {
+        studentUserId: effectiveStudentId,
+        online,
+        agentId: user?.id,
+        agentName: user?.name || "Support Officer",
+        agentImage: user?.imageUrl || "",
+        agentRole: user?.role || "ADMIN",
+        updatedAt: Date.now(),
+      };
+
+      try {
+        if (online) {
+          localStorage.setItem(
+            `riseabroad_presence_${effectiveStudentId}`,
+            JSON.stringify(payload)
+          );
+        } else {
+          localStorage.removeItem(`riseabroad_presence_${effectiveStudentId}`);
+        }
+      } catch {
+        // ignore storage errors
+      }
+
+      channel?.postMessage(payload);
+      fetch("/api/chat-presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {});
+    };
+
+    if (isStealthMode) {
+      broadcastPresence(false);
+      return () => {
+        channel?.close();
+      };
+    }
+
+    broadcastPresence(true);
+    const heartbeat = setInterval(() => broadcastPresence(true), 4000);
+
+    const handleUnload = () => broadcastPresence(false);
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      clearInterval(heartbeat);
+      window.removeEventListener("beforeunload", handleUnload);
+      broadcastPresence(false);
+      channel?.close();
+    };
+  }, [isStaff, isStealthMode, effectiveStudentId, user?.id, user?.name, user?.imageUrl, user?.role]);
+
+  // Instant cross-tab listener for Student view
+  useEffect(() => {
+    if (isStaff || !effectiveStudentId) return;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === `riseabroad_presence_${effectiveStudentId}`) {
+        if (!e.newValue) {
+          setStaffPresence(null);
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            setStaffPresence(parsed?.online ? parsed : null);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    };
+
+    const channel =
+      typeof BroadcastChannel !== "undefined"
+        ? new BroadcastChannel("riseabroad-chat-presence")
+        : null;
+
+    if (channel) {
+      channel.onmessage = (ev) => {
+        if (ev.data?.studentUserId === effectiveStudentId) {
+          setStaffPresence(ev.data.online ? ev.data : null);
+        }
+      };
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      channel?.close();
+    };
+  }, [isStaff, effectiveStudentId]);
 
   // Scroll to bottom on messages change internally only
   useEffect(() => {
@@ -176,24 +340,40 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
       return;
     }
 
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const optimisticMsg: IChatMessage = {
+      id: optimisticId,
+      roomId: room?.id,
+      message: text,
+      senderId: user?.id || "",
+      senderDisplayName: senderPersona || user?.name || "Student Support",
+      senderRoleBadge: `[${user?.role || "USER"}]`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setTimeout(() => scrollToBottom("smooth"), 10);
+
     setIsSending(true);
     try {
+      // Lock room in background without blocking message send latency
       if (isStaff && room && !room.isLocked) {
-        try {
-          await chatService.toggleRoomLock(room.id, true);
-          setRoom((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  isLocked: true,
-                  lockedByAgentId: user?.id,
-                  lockedByAgentName: user?.name,
-                }
-              : null
-          );
-        } catch {
-          // continue sending message
-        }
+        chatService
+          .toggleRoomLock(room.id, true)
+          .then(() => {
+            setRoom((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    isLocked: true,
+                    lockedByAgentId: user?.id,
+                    lockedByAgentName: user?.name,
+                  }
+                : null
+            );
+          })
+          .catch(() => {});
       }
 
       const res = await chatService.sendMessage({
@@ -205,11 +385,13 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
       });
 
       if (res.data) {
-        setMessages((prev) => [...prev, res.data]);
-        setTimeout(() => scrollToBottom("smooth"), 50);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticId ? res.data : m))
+        );
       }
     } catch (error: any) {
       console.error("Failed to send message", error);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       alert(
         error.response?.data?.message ||
           "Failed to send message. Conversation may be locked by another counselor."
@@ -331,16 +513,27 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
     setIsEmojiPickerOpen(false);
   };
 
-  // Counselor identity logic:
-  // If an actual admin/counselor is assigned and locked in the room, display their name and Active status.
-  // Otherwise, display "Rise Abroad Support Desk" with official logo and online customer care status.
-  const hasActiveCounselor = Boolean(room?.isLocked && room?.lockedByAgentName);
-  const counselorDisplayName = hasActiveCounselor
-    ? room?.lockedByAgentName!
+  // Counselor identity & live presence logic:
+  // Only show Online + Staff Name + Profile Photo when an admin/counselor actually has the chat inbox open & visible.
+  const isSupportLiveOnline = Boolean(staffPresence?.online);
+  const counselorDisplayName = isSupportLiveOnline
+    ? staffPresence?.agentName || "Rise Abroad Support"
     : "Rise Abroad Support Desk";
-  const counselorSubtitle = hasActiveCounselor
-    ? "Senior Admissions Officer • Active Now"
-    : "Customer Care & Admissions Desk • Available Online";
+  const counselorAvatarUrl = isSupportLiveOnline ? staffPresence?.agentImage : "";
+  const toggleStealthMode = () => {
+    setIsStealthMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(
+          `riseabroad_chat_stealth_${user?.id || "staff"}`,
+          next ? "1" : "0"
+        );
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // Filter messages if search query is active
   const filteredMessages = searchQuery.trim()
@@ -359,13 +552,23 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative shrink-0">
             {!isStaff ? (
-              hasActiveCounselor ? (
-                // Active Counselor Initials
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-base">
-                  {counselorDisplayName[0] || "C"}
-                </div>
+              isSupportLiveOnline ? (
+                counselorAvatarUrl ? (
+                  <img
+                    src={counselorAvatarUrl}
+                    alt={counselorDisplayName}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    className="w-11 h-11 rounded-2xl object-cover border border-emerald-500/40 shadow-lg shadow-emerald-500/15"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-base">
+                    {counselorDisplayName[0] || "S"}
+                  </div>
+                )
               ) : (
-                // Official Rise Abroad Support Desk Avatar
+                // Official Rise Abroad Support Desk Avatar (Offline)
                 <div className="w-11 h-11 rounded-2xl bg-slate-900 border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg shadow-blue-500/10">
                   <img
                     src="/logo.svg"
@@ -382,10 +585,18 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
             )}
 
             {/* Dynamic Status Dot Indicator */}
-            {hasActiveCounselor ? (
-              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse" />
+            {!isStaff ? (
+              isSupportLiveOnline ? (
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse" />
+              ) : (
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-600 ring-2 ring-slate-950" />
+              )
             ) : (
-              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ring-2 ring-slate-950 ${
+                  isStealthMode ? "bg-amber-400" : "bg-emerald-400"
+                }`}
+              />
             )}
           </div>
 
@@ -412,26 +623,35 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
             </div>
 
             <p className="text-xs text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
-              {hasActiveCounselor ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-ping" />
-                  <span className="text-emerald-400 font-medium">Active Now</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="truncate">
-                    {!isStaff
-                      ? "Senior Admissions Counselor"
-                      : "Study Abroad Applicant Dossier"}
-                  </span>
-                </>
+              {!isStaff ? (
+                isSupportLiveOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-ping" />
+                    <span className="text-emerald-400 font-medium">Online</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="truncate">Rise Abroad Education Support</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0" />
+                    <span className="text-slate-400 font-medium">Offline</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="truncate">Leave a message, our team will reply soon</span>
+                  </>
+                )
               ) : (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="text-emerald-400 font-medium">Support Online</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="truncate">
-                    {!isStaff
-                      ? counselorSubtitle
-                      : "Applicant Dossier"}
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      isStealthMode ? "bg-amber-400" : "bg-emerald-400"
+                    }`}
+                  />
+                  <span
+                    className={`font-medium ${
+                      isStealthMode ? "text-amber-400" : "text-emerald-400"
+                    }`}
+                  >
+                    {isStealthMode ? "Hidden Mode (No Online / No Seen)" : "Visible Online to Student"}
                   </span>
                 </>
               )}
@@ -444,6 +664,32 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
           {/* Staff Controls */}
           {isStaff && (
             <>
+              <button
+                type="button"
+                onClick={toggleStealthMode}
+                title={
+                  isStealthMode
+                    ? "Invisible Mode ON: Student cannot see you online or read receipts"
+                    : "Visible ON: Student sees you online and read receipts"
+                }
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  isStealthMode
+                    ? "bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25"
+                    : "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                }`}
+              >
+                {isStealthMode ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Stealth: ON</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Online &amp; Seen</span>
+                  </>
+                )}
+              </button>
               {(user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
                 <select
                   value={senderPersona}
@@ -859,9 +1105,15 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
                         })}
                       </span>
 
-                      {/* Telegram style double tick for user messages */}
+                      {/* Single tick when sent/unseen, Double tick when seen */}
                       {isMe && (
-                        <CheckCheck className="w-3.5 h-3.5 text-sky-300 stroke-[2.5]" />
+                        msg.id.startsWith("optimistic-") ? (
+                          <Check className="w-3.5 h-3.5 text-blue-100/50 stroke-[2]" />
+                        ) : msg.isRead ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-sky-300 stroke-[2.5]" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 text-blue-100/80 stroke-[2.5]" />
+                        )
                       )}
                     </div>
                   </div>

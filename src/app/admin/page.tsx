@@ -19,6 +19,7 @@ import { slugify, getUniversityCoverImage } from "@/lib/utils";
 import { ApplicationChecklistPresetTab } from "@/components/admin/ApplicationChecklistPresetTab";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
 import BackupDataCenterTab from "@/components/admin/BackupDataCenterTab";
+import { SupportChatRoom } from "@/components/chat/SupportChatRoom";
 import { 
   LayoutDashboard,
   Bell,
@@ -428,8 +429,8 @@ export default function AdminCommandCenterPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingDocModal, setIsDeletingDocModal] = useState(false);
 
-  // Dossier 5 Sub-Tabs State
-  const [dossierActiveTab, setDossierActiveTab] = useState<"FILE" | "INFO" | "TRACKING" | "PAYMENT" | "NOTES">("FILE");
+  // Dossier 6 Sub-Tabs State
+  const [dossierActiveTab, setDossierActiveTab] = useState<"FILE" | "INFO" | "TRACKING" | "PAYMENT" | "NOTES" | "CHAT">("FILE");
 
   // Tab 2: Information State & Sub-Tabs ("CONTACT" | "UNIVERSITY")
   const [dossierInfoSubTab, setDossierInfoSubTab] = useState<"CONTACT" | "UNIVERSITY">("CONTACT");
@@ -2537,7 +2538,11 @@ export default function AdminCommandCenterPage() {
                     <Folder className="w-3.5 h-3.5" />
                     <span>File</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      dossierActiveTab === "FILE" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                      dossierActiveTab === "FILE"
+                        ? "bg-white/20 text-white"
+                        : (selectedAppForManage.documents?.filter((d: any) => d.status === "UPLOADED").length || 0) > 0
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                        : "bg-slate-800 text-slate-400"
                     }`}>
                       {selectedAppForManage.documents?.length || 0}
                     </span>
@@ -2602,11 +2607,45 @@ export default function AdminCommandCenterPage() {
                     <span>Notes</span>
                     {selectedAppForManage.internalNotes && selectedAppForManage.internalNotes.length > 0 && (
                       <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                        dossierActiveTab === "NOTES" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                        dossierActiveTab === "NOTES"
+                          ? "bg-white/20 text-white"
+                          : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                       }`}>
                         {selectedAppForManage.internalNotes.length}
                       </span>
                     )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDossierActiveTab("CHAT")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      dossierActiveTab === "CHAT"
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/60"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Chat</span>
+                    {(() => {
+                      const sName = (selectedAppForManage.student?.user?.name || selectedAppForManage.student?.name || "").toLowerCase();
+                      const chatAlerts = notifications.filter(
+                        (n: any) =>
+                          !n.isRead &&
+                          ((sName && n.message?.toLowerCase().includes(sName)) ||
+                            n.title?.toLowerCase().includes("chat") ||
+                            n.title?.toLowerCase().includes("message"))
+                      ).length;
+                      return chatAlerts > 0 ? (
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                          dossierActiveTab === "CHAT"
+                            ? "bg-white/20 text-white"
+                            : "bg-rose-500/25 text-rose-300 border border-rose-500/40"
+                        }`}>
+                          {chatAlerts}
+                        </span>
+                      ) : null;
+                    })()}
                   </button>
                 </div>
 
@@ -3579,6 +3618,7 @@ export default function AdminCommandCenterPage() {
                               <th className="p-4">Program / Intake</th>
                               <th className="p-4">{appViewTab === "ALL" ? "Documents" : "Auto Purge In"}</th>
                               <th className="p-4">Status</th>
+                              {appViewTab === "ALL" && <th className="p-4">Need</th>}
                               <th className="p-4 text-right">Actions</th>
                             </tr>
                           </thead>
@@ -3586,12 +3626,34 @@ export default function AdminCommandCenterPage() {
                             {appViewTab === "ALL" ? (
                               filteredApplications.length === 0 ? (
                                 <tr>
-                                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                                  <td colSpan={7} className="p-8 text-center text-slate-500">
                                     No student applications found matching criteria.
                                   </td>
                                 </tr>
                               ) : (
-                                filteredApplications.map((app: any) => (
+                                filteredApplications.map((app: any) => {
+                                  const pendingReviewDocs =
+                                    app.documents?.filter((d: any) => d.status === "UPLOADED").length || 0;
+                                  const rejectedDocs =
+                                    app.documents?.filter((d: any) => d.status === "REJECTED").length || 0;
+                                  const notesCount = app.internalNotes?.length || 0;
+                                  const studentNameLower = (
+                                    app.student?.user?.name ||
+                                    app.student?.name ||
+                                    ""
+                                  ).toLowerCase();
+                                  const unreadAppAlerts = notifications.filter(
+                                    (n: any) =>
+                                      !n.isRead &&
+                                      studentNameLower &&
+                                      n.message?.toLowerCase().includes(studentNameLower)
+                                  ).length;
+                                  const hasNeed =
+                                    pendingReviewDocs > 0 ||
+                                    rejectedDocs > 0 ||
+                                    unreadAppAlerts > 0;
+
+                                  return (
                                   <tr key={app.id} className="hover:bg-slate-855/50 transition-colors">
                                     <td className="p-4">
                                       <div className="font-bold text-white">{app.student?.user?.name || app.student?.name || "Student Applicant"}</div>
@@ -3622,6 +3684,35 @@ export default function AdminCommandCenterPage() {
                                         {app.status || "SUBMITTED"}
                                       </span>
                                     </td>
+                                    <td className="p-4">
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        {pendingReviewDocs > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">
+                                            {pendingReviewDocs} Docs Review
+                                          </span>
+                                        )}
+                                        {unreadAppAlerts > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 whitespace-nowrap">
+                                            {unreadAppAlerts} New Alert
+                                          </span>
+                                        )}
+                                        {rejectedDocs > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap">
+                                            {rejectedDocs} Rejected
+                                          </span>
+                                        )}
+                                        {notesCount > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 whitespace-nowrap">
+                                            {notesCount} Notes
+                                          </span>
+                                        )}
+                                        {!hasNeed && notesCount === 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+                                            Clear
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
                                     <td className="p-4 text-right">
                                       <div className="flex items-center justify-end gap-2">
                                         <Button
@@ -3644,7 +3735,8 @@ export default function AdminCommandCenterPage() {
                                       </div>
                                     </td>
                                   </tr>
-                                ))
+                                  );
+                                })
                               )
                             ) : (
                               /* TRASH / DELETED APPLICATIONS TABLE LIST */
@@ -4740,6 +4832,31 @@ export default function AdminCommandCenterPage() {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* =========================================================================
+                      SUB-TAB 6: STUDENT LIVE CHAT INBOX
+                  ========================================================================= */}
+                  {dossierActiveTab === "CHAT" && (
+                    <div className="h-[620px] flex flex-col animate-in fade-in duration-150">
+                      <SupportChatRoom
+                        studentUserId={
+                          selectedAppForManage.student?.userId ||
+                          selectedAppForManage.student?.user?.id ||
+                          selectedAppForManage.studentId
+                        }
+                        applicationId={selectedAppForManage.id}
+                        studentName={
+                          selectedAppForManage.student?.user?.name ||
+                          selectedAppForManage.student?.name ||
+                          "Student Applicant"
+                        }
+                        applicationTitle={
+                          (selectedAppForManage as any).university?.name ||
+                          selectedAppForManage.program?.university?.name
+                        }
+                      />
                     </div>
                   )}
                 </div>
