@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { Footer } from "@/components/common/Footer";
 import {
   Globe2,
   ShieldCheck,
@@ -158,8 +157,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

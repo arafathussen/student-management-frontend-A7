@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { Footer } from "@/components/common/Footer";
 import {
   GraduationCap,
   FileCheck,
@@ -178,8 +177,6 @@ export default function ServicesPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

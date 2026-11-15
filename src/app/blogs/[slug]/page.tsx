@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { higherStudyService } from "@/services/higherStudyService";
 import { Blog } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { Footer } from "@/components/common/Footer";
 import {
   ArrowLeft,
   Clock,
@@ -287,8 +286,6 @@ export default function SingleBlogPage() {
           </div>
         </div>
       </article>
-
-      <Footer />
     </div>
   );
 }

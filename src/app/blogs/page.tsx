@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { higherStudyService } from "@/services/higherStudyService";
 import { Blog } from "@/types";
-import { Footer } from "@/components/common/Footer";
 import {
   BookOpen,
   Search,
@@ -320,8 +319,6 @@ export default function BlogsPage() {
           </>
         )}
       </div>
-
-      <Footer />
     </div>
   );
 }

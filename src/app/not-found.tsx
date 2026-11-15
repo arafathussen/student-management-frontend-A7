@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Footer } from "@/components/common/Footer";
 
 export default function NotFound() {
   const router = useRouter();
@@ -72,9 +71,6 @@ export default function NotFound() {
           </div>
         </div>
       </div>
-
-      {/* Embedded Footer */}
-      <Footer embedded={true} />
     </div>
   );
 }
