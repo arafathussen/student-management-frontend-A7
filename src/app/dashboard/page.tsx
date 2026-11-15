@@ -210,6 +210,24 @@ function StudentDashboardView() {
     }
   }, []);
 
+  const isFirstTabUrlSync = useRef(true);
+  useEffect(() => {
+    if (isFirstTabUrlSync.current) {
+      isFirstTabUrlSync.current = false;
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", activeTab);
+    if (activeTab === "APPLICATIONS") {
+      params.set("subTab", appSubTab);
+    } else {
+      params.delete("subTab");
+    }
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, [activeTab, appSubTab]);
+
   useEffect(() => {
     const handleSwitchTab = (e: Event) => {
       const customEvent = e as CustomEvent<StudentDashboardTab>;
@@ -1020,68 +1038,36 @@ function StudentDashboardView() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column: Applications List (1 col) */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          Applications ({applications.length})
-                        </h3>
-                        <span className="text-[11px] text-blue-400">Click to view</span>
+                  <div className="space-y-4">
+                    {applications.length > 1 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {applications.map((app, index) => {
+                          const isSelected = selectedApp?.id === app.id;
+                          return (
+                            <button
+                              key={app.id}
+                              type="button"
+                              onClick={() => setSelectedApp(app)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-blue-600/20 text-blue-300 border-blue-500/50"
+                                  : "bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white"
+                              }`}
+                            >
+                              Track #{index + 1} ({app.id.slice(0, 6)})
+                            </button>
+                          );
+                        })}
                       </div>
-                      {applications.map((app) => {
-                        const isSelected = selectedApp?.id === app.id;
-                        return (
-                          <div
-                            key={app.id}
-                            onClick={() => setSelectedApp(app)}
-                            className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                              isSelected
-                                ? "bg-slate-900 border-blue-500/50 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/30"
-                                : "bg-slate-900/40 border-slate-800 hover:bg-slate-900/80 hover:border-slate-700"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="font-bold text-white text-sm">
-                                {app.program?.university?.name || "Partner University"}
-                              </div>
-                              <Badge
-                                variant={
-                                  app.status === "OFFER_LETTER_ISSUED" || app.status === "ACCEPTED" || app.status === "ENROLLED"
-                                    ? "success"
-                                    : app.status === "REJECTED"
-                                    ? "danger"
-                                    : "primary"
-                                }
-                                className="text-[10px]"
-                              >
-                                {app.status.replace(/_/g, " ")}
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-slate-400 mt-1">
-                              {app.program?.title || "Degree Program"}
-                            </div>
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-500">
-                              <span>App ID: #{app.id.slice(0, 8)}</span>
-                              <span className="text-blue-400 font-medium flex items-center">
-                                {isSelected ? "Active View" : "Select"} <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    )}
 
-                    {/* Right Column: Flight Tracker */}
                     {selectedApp && (
-                      <div className="lg:col-span-2 space-y-6">
-                        <div className="animate-in fade-in duration-150">
-                          <ApplicationFlightTracker
-                            application={selectedApp}
-                            onRefresh={fetchMyApplications}
-                            onNavigateTab={(tab) => setAppSubTab(tab)}
-                          />
-                        </div>
+                      <div className="w-full animate-in fade-in duration-150">
+                        <ApplicationFlightTracker
+                          application={selectedApp}
+                          onRefresh={fetchMyApplications}
+                          onNavigateTab={(tab) => setAppSubTab(tab)}
+                        />
                       </div>
                     )}
                   </div>
