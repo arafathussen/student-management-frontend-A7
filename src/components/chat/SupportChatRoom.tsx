@@ -196,6 +196,44 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
     }
   }, [effectiveStudentId, applicationId, isStaff, isStealthMode]);
 
+  // Publish DB-backed live presence via room lock so cross-browser/Incognito & Vercel serverless see real-time Online/Offline
+  useEffect(() => {
+    if (!isStaff || !room?.id) return;
+    const roomId = room.id;
+
+    if (isStealthMode) {
+      if (room.isLocked && (!room.lockedByAgentId || room.lockedByAgentId === user?.id)) {
+        chatService.toggleRoomLock(roomId, false).catch(() => {});
+        setRoom((prev) =>
+          prev ? { ...prev, isLocked: false, lockedByAgentId: null, lockedByAgentName: null } : null
+        );
+      }
+      return;
+    }
+
+    if (!room.isLocked) {
+      chatService
+        .toggleRoomLock(roomId, true)
+        .then(() => {
+          setRoom((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  isLocked: true,
+                  lockedByAgentId: user?.id,
+                  lockedByAgentName: user?.name,
+                }
+              : null
+          );
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      chatService.toggleRoomLock(roomId, false).catch(() => {});
+    };
+  }, [isStaff, isStealthMode, room?.id]);
+
   // Publish live presence when Staff has this student's inbox open (unless Stealth/Invisible Mode is ON)
   useEffect(() => {
     if (!isStaff || !effectiveStudentId) return;
@@ -521,11 +559,22 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
 
   // Counselor identity & live presence logic:
   // Only show Online + Staff Name + Profile Photo when an admin/counselor actually has the chat inbox open & visible.
-  const isSupportLiveOnline = Boolean(staffPresence?.online);
+  const lastStaffMsg = [...messages]
+    .reverse()
+    .find((m) => m.sender?.role && m.sender.role !== "STUDENT");
+  const isSupportLiveOnline = Boolean(staffPresence?.online || room?.isLocked);
+  const rawAgentName =
+    staffPresence?.agentName ||
+    lastStaffMsg?.sender?.name ||
+    (room?.lockedByAgentName && !room.lockedByAgentName.includes("@")
+      ? room.lockedByAgentName
+      : "");
   const counselorDisplayName = isSupportLiveOnline
-    ? staffPresence?.agentName || "Rise Abroad Support"
+    ? rawAgentName || "Rise Abroad Support"
     : "Rise Abroad Support Desk";
-  const counselorAvatarUrl = isSupportLiveOnline ? staffPresence?.agentImage : "";
+  const counselorAvatarUrl = isSupportLiveOnline
+    ? staffPresence?.agentImage || lastStaffMsg?.sender?.imageUrl || ""
+    : "";
   const toggleStealthMode = () => {
     setIsStealthMode((prev) => {
       const next = !prev;

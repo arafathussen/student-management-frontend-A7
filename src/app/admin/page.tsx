@@ -9,6 +9,7 @@ import { higherStudyService } from "@/services/higherStudyService";
 import { userService } from "@/services/userService";
 import { paymentService } from "@/services/paymentService";
 import { notificationService } from "@/services/notificationService";
+import { chatService } from "@/services/chatService";
 import { CommissionRecord, Application, User, University, Country, Role } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -431,6 +432,10 @@ export default function AdminCommandCenterPage() {
 
   // Dossier 6 Sub-Tabs State
   const [dossierActiveTab, setDossierActiveTab] = useState<"FILE" | "INFO" | "TRACKING" | "PAYMENT" | "NOTES" | "CHAT">("FILE");
+  const [selectedChatOnlyStudent, setSelectedChatOnlyStudent] = useState<User | null>(null);
+  const [studentChatSummaries, setStudentChatSummaries] = useState<
+    Record<string, { messageCount: number; unreadFromStudent: number; lastMessageAt?: string }>
+  >({});
 
   // Tab 2: Information State & Sub-Tabs ("CONTACT" | "UNIVERSITY")
   const [dossierInfoSubTab, setDossierInfoSubTab] = useState<"CONTACT" | "UNIVERSITY">("CONTACT");
@@ -1196,6 +1201,44 @@ export default function AdminCommandCenterPage() {
     }
   }, [notifications]);
 
+  const refreshStudentChatSummaries = async (studentList: User[]) => {
+    const studentsOnly = studentList.filter((u) => u.role === "STUDENT" && u.id);
+    if (studentsOnly.length === 0) {
+      setStudentChatSummaries({});
+      return;
+    }
+    const results = await Promise.allSettled(
+      studentsOnly.map(async (student) => {
+        const room = await chatService.getOrCreateRoom(student.id);
+        const msgs: any[] = Array.isArray(room?.messages) ? room.messages : [];
+        const unreadFromStudent = msgs.filter(
+          (m: any) => !m.isRead && m.senderId === student.id
+        ).length;
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+        return {
+          studentId: student.id,
+          messageCount: msgs.length,
+          unreadFromStudent,
+          lastMessageAt: lastMsg?.createdAt,
+        };
+      })
+    );
+    const nextMap: Record<
+      string,
+      { messageCount: number; unreadFromStudent: number; lastMessageAt?: string }
+    > = {};
+    results.forEach((res) => {
+      if (res.status === "fulfilled" && res.value) {
+        nextMap[res.value.studentId] = {
+          messageCount: res.value.messageCount,
+          unreadFromStudent: res.value.unreadFromStudent,
+          lastMessageAt: res.value.lastMessageAt,
+        };
+      }
+    });
+    setStudentChatSummaries(nextMap);
+  };
+
   const fetchAdminData = async (isBackground = false) => {
     try {
       if (isBackground) {
@@ -1352,6 +1395,7 @@ export default function AdminCommandCenterPage() {
       const items = sCardsRes?.data || (Array.isArray(sCardsRes) ? sCardsRes : []);
       setAdminStoryCards(items);
       setAdminGuides(Array.isArray(blogsRes?.data) ? blogsRes.data : []);
+      void refreshStudentChatSummaries(safeUsers);
     } catch (err) {
       console.error("Failed to load admin data", err);
     } finally {
@@ -1499,6 +1543,27 @@ export default function AdminCommandCenterPage() {
     const matchesStatus = appStatusFilter === "ALL" || a.status === appStatusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const applicantUserIds = new Set(
+    safeApplications
+      .map((a: any) => a.student?.userId || a.student?.user?.id)
+      .filter(Boolean)
+  );
+
+  const filteredChatOnlyStudents =
+    appStatusFilter === "ALL"
+      ? safeUsers.filter((u) => {
+          if (u.role !== "STUDENT" || !u.id || applicantUserIds.has(u.id)) return false;
+          const summary = studentChatSummaries[u.id];
+          if (!summary || summary.messageCount === 0) return false;
+          const q = appSearch.trim().toLowerCase();
+          if (!q) return true;
+          return (
+            (u.name || "").toLowerCase().includes(q) ||
+            (u.email || "").toLowerCase().includes(q)
+          );
+        })
+      : [];
 
   const filteredTrashApplications = trashApplications.filter((a: any) => {
     const studentName = a.student?.user?.name || a.student?.name || "";
@@ -2628,6 +2693,8 @@ export default function AdminCommandCenterPage() {
                     <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Chat</span>
                     {(() => {
+                      const sUserId = selectedAppForManage.student?.userId || selectedAppForManage.student?.user?.id;
+                      const unreadRoomMsgs = sUserId ? studentChatSummaries[sUserId]?.unreadFromStudent || 0 : 0;
                       const sName = (selectedAppForManage.student?.user?.name || selectedAppForManage.student?.name || "").toLowerCase();
                       const chatAlerts = notifications.filter(
                         (n: any) =>
@@ -2636,13 +2703,14 @@ export default function AdminCommandCenterPage() {
                             n.title?.toLowerCase().includes("chat") ||
                             n.title?.toLowerCase().includes("message"))
                       ).length;
-                      return chatAlerts > 0 ? (
+                      const totalChatAlerts = unreadRoomMsgs > 0 ? unreadRoomMsgs : chatAlerts;
+                      return totalChatAlerts > 0 ? (
                         <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                           dossierActiveTab === "CHAT"
                             ? "bg-white/20 text-white"
                             : "bg-rose-500/25 text-rose-300 border border-rose-500/40"
                         }`}>
-                          {chatAlerts}
+                          {totalChatAlerts}
                         </span>
                       ) : null;
                     })()}
@@ -3624,19 +3692,24 @@ export default function AdminCommandCenterPage() {
                           </thead>
                           <tbody className="divide-y divide-slate-800/60">
                             {appViewTab === "ALL" ? (
-                              filteredApplications.length === 0 ? (
+                              filteredApplications.length === 0 && filteredChatOnlyStudents.length === 0 ? (
                                 <tr>
                                   <td colSpan={7} className="p-8 text-center text-slate-500">
                                     No student applications found matching criteria.
                                   </td>
                                 </tr>
                               ) : (
-                                filteredApplications.map((app: any) => {
+                                <>
+                                {filteredApplications.map((app: any) => {
                                   const pendingReviewDocs =
                                     app.documents?.filter((d: any) => d.status === "UPLOADED").length || 0;
                                   const rejectedDocs =
                                     app.documents?.filter((d: any) => d.status === "REJECTED").length || 0;
                                   const notesCount = app.internalNotes?.length || 0;
+                                  const appStudentUserId = app.student?.userId || app.student?.user?.id;
+                                  const unreadChatCount = appStudentUserId
+                                    ? studentChatSummaries[appStudentUserId]?.unreadFromStudent || 0
+                                    : 0;
                                   const studentNameLower = (
                                     app.student?.user?.name ||
                                     app.student?.name ||
@@ -3651,6 +3724,7 @@ export default function AdminCommandCenterPage() {
                                   const hasNeed =
                                     pendingReviewDocs > 0 ||
                                     rejectedDocs > 0 ||
+                                    unreadChatCount > 0 ||
                                     unreadAppAlerts > 0;
 
                                   return (
@@ -3686,6 +3760,11 @@ export default function AdminCommandCenterPage() {
                                     </td>
                                     <td className="p-4">
                                       <div className="flex flex-wrap items-center gap-1.5">
+                                        {unreadChatCount > 0 && (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 whitespace-nowrap">
+                                            {unreadChatCount} Unread Chat
+                                          </span>
+                                        )}
                                         {pendingReviewDocs > 0 && (
                                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">
                                             {pendingReviewDocs} Docs Review
@@ -3736,7 +3815,60 @@ export default function AdminCommandCenterPage() {
                                     </td>
                                   </tr>
                                   );
-                                })
+                                })}
+                                {filteredChatOnlyStudents.map((studentUser: User) => {
+                                  const summary = studentChatSummaries[studentUser.id];
+                                  const unreadCount = summary?.unreadFromStudent || 0;
+                                  const msgCount = summary?.messageCount || 0;
+
+                                  return (
+                                    <tr key={`chat-only-${studentUser.id}`} className="hover:bg-slate-855/50 transition-colors">
+                                      <td className="p-4">
+                                        <div className="font-bold text-white">{studentUser.name || "Student"}</div>
+                                        <div className="text-[11px] text-slate-400 font-mono">{studentUser.email || ""}</div>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className="text-slate-600">—</span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className="text-slate-600">—</span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className="text-slate-600">—</span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className="text-slate-600">—</span>
+                                      </td>
+                                      <td className="p-4">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                          {unreadCount > 0 ? (
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 whitespace-nowrap">
+                                              {unreadCount} Unread Chat
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                                              Chat ({msgCount} Msgs)
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs border-emerald-500/40 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-500/10 cursor-pointer gap-1.5"
+                                            onClick={() => setSelectedChatOnlyStudent(studentUser)}
+                                          >
+                                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span>Open Chat</span>
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                                </>
                               )
                             ) : (
                               /* TRASH / DELETED APPLICATIONS TABLE LIST */
@@ -5425,6 +5557,7 @@ export default function AdminCommandCenterPage() {
                                 </span>
                               ) : (
                                 <div className="flex items-center justify-end gap-1.5">
+
                                   {/* Change Role Button (Only Super Admin can change roles) */}
                                   {user?.role === "SUPER_ADMIN" && (
                                     <Button
@@ -9219,11 +9352,6 @@ export default function AdminCommandCenterPage() {
                                     {story.isPublished ? "Published" : "Draft"}
                                   </span>
                                 </div>
-
-                                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-white border border-slate-800 flex items-center gap-1">
-                                  <Globe2 className="w-3 h-3 text-blue-400" />
-                                  {story.country}
-                                </div>
                               </div>
 
                               <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
@@ -10450,6 +10578,44 @@ export default function AdminCommandCenterPage() {
             );
           })}
       </nav>
+      {/* Chat-Only Student Modal (opened from Applications table for pre-application inquiries) */}
+      {selectedChatOnlyStudent && (
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl w-full max-w-4xl h-[82vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-sm font-bold text-white truncate">
+                  Student Chat — {selectedChatOnlyStudent.name}
+                </span>
+                <span className="text-xs text-slate-400 font-mono truncate hidden sm:inline">
+                  ({selectedChatOnlyStudent.email})
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedChatOnlyStudent(null);
+                  void refreshStudentChatSummaries(safeUsers);
+                }}
+                className="text-xs border-slate-700 hover:bg-slate-800 cursor-pointer"
+              >
+                Close
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0 p-3 sm:p-4 flex flex-col">
+              <SupportChatRoom
+                studentUserId={selectedChatOnlyStudent.id}
+                studentName={selectedChatOnlyStudent.name || "Student"}
+                studentAvatarUrl={selectedChatOnlyStudent.imageUrl}
+                applicationTitle="Pre-Application Chat Inquiry"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
