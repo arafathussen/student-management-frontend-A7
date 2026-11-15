@@ -18,6 +18,8 @@ export const chatService = {
 		message: string;
 		senderDisplayName?: string;
 		roomId?: string;
+		studentUserId?: string;
+		applicationId?: string;
 		attachmentUrl?: string;
 	}) => {
 		const res = await apiClient.post("/chat/send", payload);

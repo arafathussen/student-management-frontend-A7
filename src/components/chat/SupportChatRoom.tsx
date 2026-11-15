@@ -126,7 +126,8 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
     if (!effectiveStudentId) return;
     try {
       const [res, presenceRes] = await Promise.all([
-        chatService.getOrCreateRoom(effectiveStudentId, applicationId),
+        // Always use the unified studentUserId room so Student Dashboard & Admin Manage File share the exact same room
+        chatService.getOrCreateRoom(effectiveStudentId),
         !isStaff
           ? fetch(`/api/chat-presence?studentUserId=${encodeURIComponent(effectiveStudentId)}`)
               .then((r) => (r.ok ? r.json() : null))
@@ -149,15 +150,16 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
           return [...serverMessages, ...remaining];
         });
 
-        // Mark student messages as read ONLY if staff is NOT in stealth/invisible mode
-        if (isStaff && !isStealthMode) {
+        // Mark incoming messages as read (Staff skips when Stealth Mode is ON)
+        if ((isStaff && !isStealthMode) || !isStaff) {
           const unreadIncoming = serverMessages.filter(
-            (m) => m.senderId !== user?.id && !m.isRead
+            (m) => m.senderId && m.senderId !== user?.id && !m.isRead
           );
-          const latestUnreadId = unreadIncoming[unreadIncoming.length - 1]?.id;
-          if (latestUnreadId && latestUnreadId !== lastMarkedReadIdRef.current) {
-            lastMarkedReadIdRef.current = latestUnreadId;
-            chatService.markMessagesAsRead(effectiveStudentId).catch(() => {});
+          const latestUnread = unreadIncoming[unreadIncoming.length - 1];
+          if (latestUnread && latestUnread.id !== lastMarkedReadIdRef.current) {
+            lastMarkedReadIdRef.current = latestUnread.id;
+            const senderToMark = isStaff ? effectiveStudentId : latestUnread.senderId;
+            chatService.markMessagesAsRead(senderToMark).catch(() => {});
           }
         }
       }
@@ -381,6 +383,7 @@ export const SupportChatRoom: React.FC<SupportChatRoomProps> = ({
 
       const res = await chatService.sendMessage({
         receiverId: effectiveStudentId,
+        studentUserId: effectiveStudentId,
         message: text,
         senderDisplayName:
           senderPersona || user?.name || "Student Support",
