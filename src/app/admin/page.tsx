@@ -170,25 +170,25 @@ export default function AdminCommandCenterPage() {
 
   // Auto-Responder & Email Templates Live Config State
   const [autoResponderSettings, setAutoResponderSettings] = useState({
-    subject: "We Have Received Your Inquiry â€” Rise Abroad Education",
+    subject: "We Have Received Your Inquiry — Rise Abroad Education",
     senderName: "Rise Abroad Admissions Desk",
     senderEmail: "admissions@riseabroad.com",
-    whatsappText: "à¦œà¦°à§à¦°à¦¿ à¦•à§‹à¦¨à§‹ à¦¤à¦¥à§à¦¯à§‡à¦° à¦ªà§à¦°à§Ÿà§‹à¦œà¦¨ à¦¹à¦²à§‡ à¦…à¦¥à¦¬à¦¾ à§¨à§ª à¦˜à¦£à§à¦Ÿà¦¾à¦° à¦®à¦§à§à¦¯à§‡ à¦¯à§‹à¦—à¦¾à¦¯à§‹à¦— à¦ªà§‡à¦¤à§‡ à¦¬à¦¿à¦²à¦®à§à¦¬ à¦¹à¦²à§‡, à¦†à¦ªà¦¨à¦¿ à¦¸à¦°à¦¾à¦¸à¦°à¦¿ à¦†à¦®à¦¾à¦¦à§‡à¦° à¦…à¦«à¦¿à¦¸à¦¿à§Ÿà¦¾à¦² à¦¹à§‹à§Ÿà¦¾à¦Ÿà¦¸à¦…à§à¦¯à¦¾à¦ªà§‡ à¦¨à¦• à¦¦à¦¿à¦¤à§‡ à¦ªà¦¾à¦°à§‡à¦¨:",
+    whatsappText: "জরুরি কোনো তথ্যের প্রয়োজন হলে অথবা ২৪ ঘণ্টার মধ্যে যোগাযোগ পেতে বিলম্ব হলে, আপনি সরাসরি আমাদের অফিসিয়াল হোয়াটসঅ্যাপে নক দিতে পারেন:",
     whatsappNumber: "+880 1712-345678",
-    officeAddress: "Rise Abroad Education â€¢ Level 6, Navana Tower, Gulshan-1, Dhaka",
+    officeAddress: "Rise Abroad Education • Level 6, Navana Tower, Gulshan-1, Dhaka",
     hotline: "+880 1712-345678",
     email: "admissions@riseabroad.com",
-    hours: "Counseling Desk: Sat â€“ Thu (10AM â€“ 7PM)",
+    hours: "Counseling Desk: Sat – Thu (10AM – 7PM)",
     logoUrl: "",
-    otpSubject: "Your Password Reset Code â€” Rise Abroad Education",
+    otpSubject: "Your Password Reset Code — Rise Abroad Education",
     otpHeading: "Password Reset Request",
     otpBodyMessage: "We received a request to reset your Rise Abroad Education account password. Use the verification code below to set a new password:",
     otpExpiryNote: "This code is valid for 10 minutes. If you did not request a password reset, please ignore this email or contact support immediately.",
-    regOtpSubject: "Account Verification Code â€” Rise Abroad Education",
+    regOtpSubject: "Account Verification Code — Rise Abroad Education",
     regOtpHeading: "Verify Your Student Account",
     regOtpBodyMessage: "Thank you for registering with Rise Abroad Education. Please use the following 6-digit verification code to activate and verify your student account:",
     regOtpExpiryNote: "This code is valid for 10 minutes. For your security, do not share this code with anyone.",
-    welcomeSubject: "Welcome to Rise Abroad Education â€” Account Registered",
+    welcomeSubject: "Welcome to Rise Abroad Education — Account Registered",
     welcomeHeading: "Welcome to Rise Abroad Education!",
     welcomeMessage: "Thank you for creating an account with Rise Abroad Education. Your student profile has been verified successfully. You can now explore university programs, apply for scholarships, track your admission progress, and connect directly with senior counselors.",
     welcomeBtnText: "Access Student Portal",
@@ -207,7 +207,7 @@ export default function AdminCommandCenterPage() {
   // Success Stories CMS State
   const [successSubTab, setSuccessSubTab] = useState<"SETTINGS" | "CARDS">("SETTINGS");
   const [successSettings, setSuccessSettings] = useState<SuccessPageSettings>({
-    badgeText: "Real Students â€¢ Real Visas â€¢ Proven Results",
+    badgeText: "Real Students • Real Visas • Proven Results",
     titlePart1: "Student",
     titlePart2: "Success Stories",
     description: "Celebrating Bangladeshi students accepted into premier global universities. Watch their interviews, read their visa journeys, and discover scholarship awards achieved with Rise Abroad Education.",
@@ -293,7 +293,7 @@ export default function AdminCommandCenterPage() {
       (s) => s.id !== currentStoryId && s.slug && toUrlSlug(s.slug) === cleanSlug
     );
     if (conflict) {
-      setSlugError(`âš ï¸ Already in use by student "${conflict.studentName}". Please choose a different serial (e.g. 03, 04) or customize the name.`);
+      setSlugError(`Already in use by student "${conflict.studentName}". Please choose a different serial (e.g. 03, 04) or customize the name.`);
       return false;
     }
     setSlugError(null);
@@ -1333,25 +1333,25 @@ export default function AdminCommandCenterPage() {
 
       if (contactSettingsRes) {
         setAutoResponderSettings({
-          subject: contactSettingsRes.autoResponderSubject || "We Have Received Your Inquiry â€” Rise Abroad Education",
+          subject: contactSettingsRes.autoResponderSubject || "We Have Received Your Inquiry — Rise Abroad Education",
           senderName: contactSettingsRes.autoResponderSenderName || "Rise Abroad Admissions Desk",
           senderEmail: contactSettingsRes.autoResponderSenderEmail || "admissions@riseabroad.com",
-          whatsappText: contactSettingsRes.autoResponderWhatsAppText || "à¦œà¦°à§à¦°à¦¿ à¦•à§‹à¦¨à§‹ à¦¤à¦¥à§à¦¯à§‡à¦° à¦ªà§à¦°à§Ÿà§‹à¦œà¦¨ à¦¹à¦²à§‡ à¦…à¦¥à¦¬à¦¾ à§¨à§ª à¦˜à¦£à§à¦Ÿà¦¾à¦° à¦®à¦§à§à¦¯à§‡ à¦¯à§‹à¦—à¦¾à¦¯à§‹à¦— à¦ªà§‡à¦¤à§‡ à¦¬à¦¿à¦²à¦®à§à¦¬ à¦¹à¦²à§‡, à¦†à¦ªà¦¨à¦¿ à¦¸à¦°à¦¾à¦¸à¦°à¦¿ à¦†à¦®à¦¾à¦¦à§‡à¦° à¦…à¦«à¦¿à¦¸à¦¿à§Ÿà¦¾à¦² à¦¹à§‹à§Ÿà¦¾à¦Ÿà¦¸à¦…à§à¦¯à¦¾à¦ªà§‡ à¦¨à¦• à¦¦à¦¿à¦¤à§‡ à¦ªà¦¾à¦°à§‡à¦¨:",
+          whatsappText: contactSettingsRes.autoResponderWhatsAppText || "জরুরি কোনো তথ্যের প্রয়োজন হলে অথবা ২৪ ঘণ্টার মধ্যে যোগাযোগ পেতে বিলম্ব হলে, আপনি সরাসরি আমাদের অফিসিয়াল হোয়াটসঅ্যাপে নক দিতে পারেন:",
           whatsappNumber: contactSettingsRes.autoResponderWhatsAppNumber || "+880 1712-345678",
-          officeAddress: contactSettingsRes.autoResponderOfficeAddress || "Rise Abroad Education â€¢ Level 6, Navana Tower, Gulshan-1, Dhaka",
+          officeAddress: contactSettingsRes.autoResponderOfficeAddress || "Rise Abroad Education • Level 6, Navana Tower, Gulshan-1, Dhaka",
           hotline: contactSettingsRes.autoResponderHotline || "+880 1712-345678",
           email: contactSettingsRes.autoResponderEmail || contactSettingsRes.autoResponderSenderEmail || "admissions@riseabroad.com",
-          hours: contactSettingsRes.autoResponderHours || "Counseling Desk: Sat â€“ Thu (10AM â€“ 7PM)",
+          hours: contactSettingsRes.autoResponderHours || "Counseling Desk: Sat – Thu (10AM – 7PM)",
           logoUrl: contactSettingsRes.autoResponderLogoUrl || "",
-          otpSubject: contactSettingsRes.otpEmailSubject || "Your Password Reset Code â€” Rise Abroad Education",
+          otpSubject: contactSettingsRes.otpEmailSubject || "Your Password Reset Code — Rise Abroad Education",
           otpHeading: contactSettingsRes.otpEmailHeading || "Password Reset Request",
           otpBodyMessage: contactSettingsRes.otpEmailBodyMessage || "We received a request to reset your Rise Abroad Education account password. Use the verification code below to set a new password:",
           otpExpiryNote: contactSettingsRes.otpEmailExpiryNote || "This code is valid for 10 minutes. If you did not request a password reset, please ignore this email or contact support immediately.",
-          regOtpSubject: contactSettingsRes.regOtpEmailSubject || "Account Verification Code â€” Rise Abroad Education",
+          regOtpSubject: contactSettingsRes.regOtpEmailSubject || "Account Verification Code — Rise Abroad Education",
           regOtpHeading: contactSettingsRes.regOtpEmailHeading || "Verify Your Student Account",
           regOtpBodyMessage: contactSettingsRes.regOtpEmailBodyMessage || "Thank you for registering with Rise Abroad Education. Please use the following 6-digit verification code to activate and verify your student account:",
           regOtpExpiryNote: contactSettingsRes.regOtpEmailExpiryNote || "This code is valid for 10 minutes. For your security, do not share this code with anyone.",
-          welcomeSubject: contactSettingsRes.welcomeEmailSubject || "Welcome to Rise Abroad Education â€” Account Registered",
+          welcomeSubject: contactSettingsRes.welcomeEmailSubject || "Welcome to Rise Abroad Education — Account Registered",
           welcomeHeading: contactSettingsRes.welcomeEmailHeading || "Welcome to Rise Abroad Education!",
           welcomeMessage: contactSettingsRes.welcomeEmailMessage || "Thank you for creating an account with Rise Abroad Education. Your student profile has been verified successfully. You can now explore university programs, apply for scholarships, track your admission progress, and connect directly with senior counselors.",
           welcomeBtnText: contactSettingsRes.welcomeEmailBtnText || "Access Student Portal",
@@ -2573,9 +2573,9 @@ export default function AdminCommandCenterPage() {
                     {selectedAppForManage.student?.user?.name || selectedAppForManage.student?.name || "Student Applicant"}
                   </h1>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    {(selectedAppForManage as any).university?.name || selectedAppForManage.program?.university?.name || "Partner University"} â€¢{" "}
+                    {(selectedAppForManage as any).university?.name || selectedAppForManage.program?.university?.name || "Partner University"} •{" "}
                     {(selectedAppForManage as any).programName || selectedAppForManage.program?.name || selectedAppForManage.program?.title || "Degree Program"}
-                    {(selectedAppForManage as any).intake ? ` â€¢ ${(selectedAppForManage as any).intake}` : ""}
+                    {(selectedAppForManage as any).intake ? ` • ${(selectedAppForManage as any).intake}` : ""}
                   </p>
                 </div>
               </div>
@@ -3667,8 +3667,8 @@ export default function AdminCommandCenterPage() {
                             <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                             <span>
                               {user?.role === "SUPER_ADMIN"
-                                ? "ðŸ‘‘ Super Admin: Restore applications or purge records permanently. Items auto-delete after 30 days."
-                                : "ðŸ›¡ï¸ Regular Admin: Restore applications back to active state. Permanent purge is reserved for Super Admin, and items auto-delete after 30 days."}
+                                ? "Super Admin: Restore applications or purge records permanently. Items auto-delete after 30 days."
+                                : "Regular Admin: Restore applications back to active state. Permanent purge is reserved for Super Admin, and items auto-delete after 30 days."}
                             </span>
                           </div>
                           <span className="text-[11px] font-mono text-slate-400 shrink-0">
@@ -4151,12 +4151,12 @@ export default function AdminCommandCenterPage() {
                                         className="text-[10px]"
                                       >
                                         {doc.status === "VERIFIED"
-                                          ? "Verified âœ”ï¸"
+                                          ? "Verified"
                                           : doc.status === "REJECTED"
-                                          ? "Rejected âš ï¸"
+                                          ? "Rejected"
                                           : doc.status === "UPLOADED"
-                                          ? "In Review â³"
-                                          : "Required ðŸ“„"}
+                                          ? "In Review"
+                                          : "Required"}
                                       </Badge>
                                     </td>
                                     <td className="p-3 text-right">
@@ -4858,9 +4858,9 @@ export default function AdminCommandCenterPage() {
                                   className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white"
                                 >
                                   <option value="USD">USD ($)</option>
-                                  <option value="GBP">GBP (Â£)</option>
-                                  <option value="EUR">EUR (â‚¬)</option>
-                                  <option value="BDT">BDT (à§³)</option>
+                                  <option value="GBP">GBP (£)</option>
+                                  <option value="EUR">EUR (€)</option>
+                                  <option value="BDT">BDT (৳)</option>
                                 </select>
                               </div>
                             </div>
@@ -5315,7 +5315,7 @@ export default function AdminCommandCenterPage() {
                             type="button"
                             onClick={() => setDocRotation((r) => (r - 90 + 360) % 360)}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
-                            title="Rotate Left (-90Â°)"
+                            title="Rotate Left (-90°)"
                           >
                             <RotateCcw className="w-4 h-4 text-blue-400" />
                           </button>
@@ -5323,7 +5323,7 @@ export default function AdminCommandCenterPage() {
                             type="button"
                             onClick={() => setDocRotation((r) => (r + 90) % 360)}
                             className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
-                            title="Rotate Right (+90Â°)"
+                            title="Rotate Right (+90°)"
                           >
                             <RotateCw className="w-4 h-4 text-blue-400" />
                           </button>
@@ -5332,9 +5332,9 @@ export default function AdminCommandCenterPage() {
                               type="button"
                               onClick={() => setDocRotation(0)}
                               className="px-2 py-1 text-[10px] font-mono font-semibold rounded-lg text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 cursor-pointer transition-colors"
-                              title="Reset Rotation to 0Â°"
+                              title="Reset Rotation to 0°"
                             >
-                              Reset ({docRotation}Â°)
+                              Reset ({docRotation}°)
                             </button>
                           )}
                         </div>
@@ -6482,7 +6482,7 @@ export default function AdminCommandCenterPage() {
                             type="text"
                             value={autoResponderSettings.hours}
                             onChange={(e) => setAutoResponderSettings({ ...autoResponderSettings, hours: e.target.value })}
-                            placeholder="Counseling Desk: Sat â€“ Thu (10AM â€“ 7PM)"
+                            placeholder="Counseling Desk: Sat – Thu (10AM – 7PM)"
                             className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500 transition-colors"
                             required
                           />
@@ -6498,7 +6498,7 @@ export default function AdminCommandCenterPage() {
                           type="text"
                           value={autoResponderSettings.officeAddress}
                           onChange={(e) => setAutoResponderSettings({ ...autoResponderSettings, officeAddress: e.target.value })}
-                          placeholder="Rise Abroad Education â€¢ Level 6, Navana Tower, Gulshan-1, Dhaka"
+                          placeholder="Rise Abroad Education • Level 6, Navana Tower, Gulshan-1, Dhaka"
                           className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500 transition-colors"
                           required
                         />
@@ -6572,7 +6572,7 @@ export default function AdminCommandCenterPage() {
                         <span className="text-slate-500">&lt;{autoResponderSettings.senderEmail}&gt;</span>
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        to: <strong className="text-slate-300">student@gmail.com</strong> â€¢ <span>Delivered within 2 seconds</span>
+                        to: <strong className="text-slate-300">student@gmail.com</strong> • <span>Delivered within 2 seconds</span>
                       </div>
                     </div>
                   </div>
@@ -6871,7 +6871,7 @@ export default function AdminCommandCenterPage() {
                         <span className="text-slate-500">&lt;{autoResponderSettings.senderEmail}&gt;</span>
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        to: <strong className="text-slate-300">user@example.com</strong> â€¢ <span>Instant Security Dispatch</span>
+                        to: <strong className="text-slate-300">user@example.com</strong> • <span>Instant Security Dispatch</span>
                       </div>
                     </div>
                   </div>
@@ -6924,7 +6924,7 @@ export default function AdminCommandCenterPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-amber-300/90 font-medium">
-                          â± Valid for 10 minutes only
+                          Valid for 10 minutes only
                         </p>
                       </div>
 
@@ -7181,7 +7181,7 @@ export default function AdminCommandCenterPage() {
                         <span className="text-slate-500">&lt;{autoResponderSettings.senderEmail}&gt;</span>
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        to: <strong className="text-slate-300">newstudent@example.com</strong> â€¢ <span>Registration Security Dispatch</span>
+                        to: <strong className="text-slate-300">newstudent@example.com</strong> • <span>Registration Security Dispatch</span>
                       </div>
                     </div>
                   </div>
@@ -7234,7 +7234,7 @@ export default function AdminCommandCenterPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-sky-300/90 font-medium">
-                          â± Valid for 10 minutes only
+                          Valid for 10 minutes only
                         </p>
                       </div>
 
@@ -7507,7 +7507,7 @@ export default function AdminCommandCenterPage() {
                         from: <strong className="text-slate-300">{autoResponderSettings.senderName}</strong> &lt;{autoResponderSettings.senderEmail}&gt;
                       </div>
                       <div className="text-slate-400 text-[11px]">
-                        to: <strong className="text-slate-300">newstudent@example.com</strong> â€¢ <span>Student Onboarding Dispatch</span>
+                        to: <strong className="text-slate-300">newstudent@example.com</strong> • <span>Student Onboarding Dispatch</span>
                       </div>
                     </div>
                   </div>
@@ -7556,15 +7556,15 @@ export default function AdminCommandCenterPage() {
                         </div>
                         <ul className="space-y-1.5 text-[11px] text-slate-300">
                           <li className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-bold">âœ“</span>
+                            <span className="text-emerald-400 font-bold">✓</span>
                             <span>Explore 500+ top universities across UK, USA, Canada, and Europe</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-bold">âœ“</span>
+                            <span className="text-emerald-400 font-bold">✓</span>
                             <span>Directly track your application status &amp; visa documentation</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-bold">âœ“</span>
+                            <span className="text-emerald-400 font-bold">✓</span>
                             <span>Connect with senior academic counselors for one-on-one guidance</span>
                           </li>
                         </ul>
@@ -8115,7 +8115,7 @@ export default function AdminCommandCenterPage() {
                           type="text"
                           value={newUni.scholarshipHighlight}
                           onChange={(e) => setNewUni({ ...newUni, scholarshipHighlight: e.target.value })}
-                          placeholder="e.g. Up to 50% Scholarship â€¢ â‚¬3,500/yr"
+                          placeholder="e.g. Up to 50% Scholarship • €3,500/yr"
                           className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -8196,7 +8196,7 @@ export default function AdminCommandCenterPage() {
                                 : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
                             }`}
                           >
-                            {isSelected ? `âœ“ ${suggested}` : `+ ${suggested}`}
+                            {isSelected ? `✓ ${suggested}` : `+ ${suggested}`}
                           </button>
                         );
                       })}
@@ -8941,7 +8941,7 @@ export default function AdminCommandCenterPage() {
                                     : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
                                 }`}
                               >
-                                {active ? `âœ“ ${sug}` : `+ ${sug}`}
+                                {active ? `✓ ${sug}` : `+ ${sug}`}
                               </button>
                             );
                           }
@@ -8951,7 +8951,7 @@ export default function AdminCommandCenterPage() {
                       {/* Excerpt */}
                       <div>
                         <label className="block font-semibold text-slate-300 mb-1.5">
-                          Short Card Summary / Excerpt (2â€“3 sentences)
+                          Short Card Summary / Excerpt (2–3 sentences)
                         </label>
                         <textarea
                           rows={2}
@@ -9163,7 +9163,7 @@ export default function AdminCommandCenterPage() {
                         type="text"
                         value={successSettings.badgeText}
                         onChange={(e) => setSuccessSettings({ ...successSettings, badgeText: e.target.value })}
-                        placeholder="Real Students â€¢ Real Visas â€¢ Proven Results"
+                        placeholder="Real Students • Real Visas • Proven Results"
                         className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500 transition-colors"
                         required
                       />
