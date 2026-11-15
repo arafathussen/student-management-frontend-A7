@@ -4545,13 +4545,36 @@ export default function AdminCommandCenterPage() {
                         <div>
                           <h3 className="text-sm font-bold text-white flex items-center gap-2">
                             <Compass className="w-4 h-4 text-blue-400" />
-                            <span>Admission Lifecycle Milestones & Tracking</span>
+                            <span>Dynamic Tracking Journey Builder</span>
                           </h3>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            Update the official admission tracking stages. Students see real-time status updates on their applicant dashboard.
+                            Tick completed steps, pre-list upcoming tasks, and publish. Students see your exact roadmap in real time.
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setTrackingStages((prev) => [
+                                ...prev,
+                                {
+                                  id: `step-${Date.now()}`,
+                                  stageKey: `CUSTOM_${prev.length + 1}`,
+                                  title: "New Next Step",
+                                  description: "Describe what happens in this stage.",
+                                  status: "PENDING",
+                                  completedAt: "",
+                                  note: "",
+                                },
+                              ]);
+                            }}
+                            className="text-xs border-slate-700 hover:border-blue-500 text-slate-200 hover:text-white cursor-pointer"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
+                            <span>Add Step</span>
+                          </Button>
                           <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
                             <input
                               type="checkbox"
@@ -4571,21 +4594,21 @@ export default function AdminCommandCenterPage() {
                             {isSavingTracking ? (
                               <>
                                 <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                                <span>Saving Tracking...</span>
+                                <span>Publishing...</span>
                               </>
                             ) : (
                               <>
                                 <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                                <span>Save Tracking & Notify</span>
+                                <span>Publish &amp; Save Tracking</span>
                               </>
                             )}
                           </Button>
                         </div>
                       </div>
 
-                      {/* 9 Stages Vertical Timeline */}
+                      {/* Dynamic Stages Timeline */}
                       <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {trackingStages.map((stage, idx) => (
                             <div
                               key={stage.id || idx}
@@ -4594,43 +4617,131 @@ export default function AdminCommandCenterPage() {
                                   ? "bg-emerald-950/20 border-emerald-500/30 shadow-sm"
                                   : stage.status === "IN_PROGRESS"
                                   ? "bg-blue-950/30 border-blue-500/40 shadow-md shadow-blue-950/40"
-                                  : "bg-slate-900/40 border-slate-800/80 opacity-70"
+                                  : "bg-slate-900/40 border-slate-800/80"
                               }`}
                             >
-                              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                                <div className="flex items-start gap-3">
-                                  <div
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 ${
-                                      stage.status === "COMPLETED"
-                                        ? "bg-emerald-500 text-slate-950"
-                                        : stage.status === "IN_PROGRESS"
-                                        ? "bg-blue-500 text-white animate-pulse"
-                                        : "bg-slate-800 text-slate-400"
-                                    }`}
-                                  >
-                                    {stage.status === "COMPLETED" ? "âœ“" : idx + 1}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <h5 className="font-bold text-sm text-white">{stage.title}</h5>
-                                      <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                          stage.status === "COMPLETED"
-                                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                                            : stage.status === "IN_PROGRESS"
-                                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                                            : "bg-slate-800 text-slate-400"
-                                        }`}
-                                      >
-                                        {stage.status.replace("_", " ")}
-                                      </span>
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <button
+                                      type="button"
+                                      title={
+                                        stage.status === "COMPLETED"
+                                          ? "Mark as Pending"
+                                          : "Tick as Completed"
+                                      }
+                                      onClick={() => {
+                                        const updated = [...trackingStages];
+                                        const nextStatus =
+                                          updated[idx].status === "COMPLETED" ? "PENDING" : "COMPLETED";
+                                        updated[idx] = {
+                                          ...updated[idx],
+                                          status: nextStatus,
+                                          completedAt:
+                                            nextStatus === "COMPLETED" && !updated[idx].completedAt
+                                              ? new Date().toLocaleDateString("en-US", {
+                                                  year: "numeric",
+                                                  month: "short",
+                                                  day: "numeric",
+                                                })
+                                              : updated[idx].completedAt,
+                                        };
+                                        setTrackingStages(updated);
+                                      }}
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 cursor-pointer transition-all ${
+                                        stage.status === "COMPLETED"
+                                          ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                                          : stage.status === "IN_PROGRESS"
+                                          ? "bg-blue-500 text-white animate-pulse hover:bg-blue-400"
+                                          : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+                                      }`}
+                                    >
+                                      {stage.status === "COMPLETED" ? "✓" : idx + 1}
+                                    </button>
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={stage.title || ""}
+                                          onChange={(e) => {
+                                            const updated = [...trackingStages];
+                                            updated[idx] = { ...updated[idx], title: e.target.value };
+                                            setTrackingStages(updated);
+                                          }}
+                                          placeholder="Milestone title..."
+                                          className="flex-1 min-w-[200px] px-2.5 py-1 bg-slate-950/70 border border-slate-800/80 rounded-lg font-bold text-sm text-white focus:outline-none focus:border-blue-500"
+                                        />
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                                            stage.status === "COMPLETED"
+                                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                              : stage.status === "IN_PROGRESS"
+                                              ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                              : "bg-slate-800 text-slate-400"
+                                          }`}
+                                        >
+                                          {stage.status.replace("_", " ")}
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={stage.description || ""}
+                                        onChange={(e) => {
+                                          const updated = [...trackingStages];
+                                          updated[idx] = { ...updated[idx], description: e.target.value };
+                                          setTrackingStages(updated);
+                                        }}
+                                        placeholder="Short step description..."
+                                        className="w-full px-2.5 py-1 bg-slate-950/50 border border-slate-800/60 rounded-lg text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                                      />
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-1">{stage.description}</p>
+                                  </div>
+
+                                  {/* Reorder & Remove */}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      disabled={idx === 0}
+                                      onClick={() => {
+                                        if (idx === 0) return;
+                                        const updated = [...trackingStages];
+                                        [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
+                                        setTrackingStages(updated);
+                                      }}
+                                      title="Move Up"
+                                      className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-xs text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={idx === trackingStages.length - 1}
+                                      onClick={() => {
+                                        if (idx === trackingStages.length - 1) return;
+                                        const updated = [...trackingStages];
+                                        [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
+                                        setTrackingStages(updated);
+                                      }}
+                                      title="Move Down"
+                                      className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-xs text-slate-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setTrackingStages((prev) => prev.filter((_, i) => i !== idx));
+                                      }}
+                                      title="Remove Step"
+                                      className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
                                 </div>
 
                                 {/* Controls: Status, Date, Note */}
-                                <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto shrink-0">
+                                <div className="flex flex-wrap items-center gap-2 pl-10">
                                   <select
                                     value={stage.status}
                                     onChange={(e) => {
@@ -4646,7 +4757,7 @@ export default function AdminCommandCenterPage() {
                                     }}
                                     className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
                                   >
-                                    <option value="PENDING">Pending</option>
+                                    <option value="PENDING">Pending (Upcoming)</option>
                                     <option value="IN_PROGRESS">In Progress</option>
                                     <option value="COMPLETED">Completed</option>
                                   </select>
@@ -4659,8 +4770,8 @@ export default function AdminCommandCenterPage() {
                                       updated[idx] = { ...updated[idx], completedAt: e.target.value };
                                       setTrackingStages(updated);
                                     }}
-                                    placeholder="Date (e.g. Oct 24, 2026)"
-                                    className="w-36 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                                    placeholder="Date (e.g. Nov 15, 2026)"
+                                    className="w-40 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
                                   />
 
                                   <input
@@ -4671,8 +4782,8 @@ export default function AdminCommandCenterPage() {
                                       updated[idx] = { ...updated[idx], note: e.target.value };
                                       setTrackingStages(updated);
                                     }}
-                                    placeholder="Counselor remark visible to student..."
-                                    className="w-56 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                                    placeholder="Optional note visible to student..."
+                                    className="flex-1 min-w-[200px] px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                                   />
                                 </div>
                               </div>
